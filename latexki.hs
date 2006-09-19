@@ -9,12 +9,11 @@ import Directory
 import Monad
 import List
 
-splitFileExt p =
- 	  case break (== '.') fname of
- 	        (suf@(_:_),_:pre) -> (reverse (pre++path), reverse suf)
- 	        _                 -> (p, [])
- 	  where
- 	    (fname,path) = break (=='/') (reverse p)
+import FilePath
+
+import Wiki
+
+data WikiInfo = WikiInfo { basenames :: [String] }
 
 produces "tex"   = ["html", "pdf"]
 produces "latex" = produces "tex"
@@ -25,26 +24,28 @@ produces _       = []
 
 directoryFiles dir = getDirectoryContents dir  >>= return.(map ((dir++).("/"++))) >>=  filterM (doesFileExist)
 
-texDeps file = return []
-noDeps  file = return []
+texDeps wi file = return []
+noDeps  wi file = return []
 
-tex2pdf  tex pdf = return ()
-tex2html tex html = return ()
-wiki2html tex html = return ()
-generic2html file html = return ()
+tex2pdf  wi tex pdf = writeFile pdf $ "Outpuf of "++ tex
+tex2html wi tex html = return ()
+generic2html wi file html = return ()
 
-pipes :: String -> [ ( String, FilePath -> IO [FilePath], FilePath -> FilePath -> IO () ) ]
-pipes "tex" =  [("pdf",  noDeps, tex2pdf      ),
-                ("html", noDeps, tex2html     ) ]
-pipes "wiki" = [("html", noDeps, wiki2html    ) ]
-pipes "_"    = [("html", noDeps, generic2html ) ]
+pipes :: String -> [ ( String, WikiInfo -> FilePath -> FilePath -> IO () ) ]
+pipes "tex" =  [("pdf",  tex2pdf      ),
+                ("html", tex2html     ) ]
+pipes ""     = [("html", wiki2html    ) ]
+pipes _      = [("html", generic2html ) ]
 
-actions file = do 
-	let  (basename, ext) = splitFileExt file
+deps wi "tex" = texDeps wi
+deps wi _     = return.(const [])
+
+actions wi file = do 
+	let  (dir, basename, ext) = splitFilePath file
 	     withExt e       = basename++"."++e
-	     (acts, depIOs)  = unzip $ map (\(to, deps, action) ->((action file, (withExt to)), deps file)) $ pipes ext
-        deps <- sequence depIOs
-        return $ zip acts (map (file:) deps)
+	     acts            = map (\(to, action) ->(action wi file, (withExt to))) $ pipes ext
+        myDeps <- deps wi ext file
+        return $ map (flip (,) (file:myDeps)) acts
 
 needsUpdate file1 file2 = do 
 	ex <- doesFileExist file1
@@ -72,9 +73,10 @@ main = do
 
   inputfiles <- directoryFiles datadir
   old_outputs <- directoryFiles "."
+  let wi = WikiInfo { basenames = map ((\(_,m,_)->m).splitFilePath) inputfiles }
 
   putStr "Getting dependencies..."
-  todo' <- mapM actions inputfiles >>= return.concat
+  todo' <- mapM (actions wi) inputfiles >>= return.concat
   putStrLn $ (show $ length todo')++" of these."
 
   putStr "Checking for up-to-dateness..."
