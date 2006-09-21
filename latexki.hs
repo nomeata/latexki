@@ -11,31 +11,24 @@ import List
 
 import FilePath
 
+import Common
 import Wiki
-
-data WikiInfo = WikiInfo { basenames :: [String] }
-
-produces "tex"   = ["html", "pdf"]
-produces "latex" = produces "tex"
-produces "wiki"  = ["html"]
-produces "png"   = ["html"]
-produces "jpg"   = ["html"]
-produces _       = []
+import Latex
 
 directoryFiles dir = getDirectoryContents dir  >>= return.(map ((dir++).("/"++))) >>=  filterM (doesFileExist)
 
 texDeps wi file = return []
 noDeps  wi file = return []
 
-tex2pdf  wi tex pdf = writeFile pdf $ "Outpuf of "++ tex
 tex2html wi tex html = return ()
 generic2html wi file html = return ()
 
 pipes :: String -> [ ( String, WikiInfo -> FilePath -> FilePath -> IO () ) ]
-pipes "tex" =  [("pdf",  tex2pdf      ),
-                ("html", tex2html     ) ]
-pipes ""     = [("html", wiki2html    ) ]
-pipes _      = [("html", generic2html ) ]
+pipes "tex"   =  [("pdf",  tex2pdf      ),
+                  ("html", tex2html     ) ]
+pipes "latex" = pipes "tex"
+pipes ""      = [("html", wiki2html    ) ]
+pipes _       = [("html", generic2html ) ]
 
 deps wi "tex" = texDeps wi
 deps wi _     = return.(const [])

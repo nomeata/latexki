@@ -3,14 +3,14 @@ module Wiki (wiki2html) where
 import FilePath
 import List
 import Char
-
+import Common
 import HtmlStyle
 
 wiki2html wi wiki html = do
 	let (_,basename,_) = splitFilePath wiki
 	content <- readFile wiki
-	let formatted = links $ unlines $ lineBased $ lines content
-	writeFile html $ htmlPage wi basename formatted
+	let formatted = (links wi) $ unlines $ lineBased $ lines content
+	writeFile html $ htmlPage wi basename formatted 
 
 lineBased = prefo.paras.lists.(map headers).(map stripWhitespace)
 
@@ -43,22 +43,22 @@ words' text = a : cont
 	      cont | null b    = []
 	           | otherwise = [head b] : words' (tail b)
 
-camelCase w | length w <= 3                            = w
-            | any (not.isAlphaNum) w                   = w
-            | isUpper (head w) && any isUpper (tail w) = linkPage w
+camelCase wi w | length w <= 3                            = w
+               | any (not.isAlphaNum) w                   = w
+               | isUpper (head w) && any isUpper (tail w) = linkPage wi w
             | otherwise                                = w
 
-linkPage a = tagP "a" [("href", a ++".html")] a
+linkPage wi a | a `elem` basenames wi = tagP "a" [("href", a ++".html")]  a
+	      | otherwise             = tagP "a" [("href", a ++".html")] (a++"?")
 
-links = concat.links'.words'
-
-links' [] = []
-links' ("[":rest )  | null after                                  = "["           : links' rest
-                    | isValidPagename link && (head after) == "]" = linkPage link : links' (tail after)
-                    | otherwise                                   = "["           : links' rest
-	where (linkParts,after) = span (/="]") rest
-	      link = concat linkParts
-links' (w1:rest) = camelCase w1 : links' rest
+links wi = concat.(links').words'
+  where links' [] = []
+	links' ("[":rest )  | null after                                  = "["              : links' rest
+	                    | isValidPagename link && (head after) == "]" = linkPage wi link : links' (tail after)
+	                    | otherwise                                   = "["              : links' rest
+	  where (linkParts,after) = span (/="]") rest
+	        link = concat linkParts
+	links' (w1:rest) = camelCase wi w1 : links' rest
 
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "._-" ) 
 
