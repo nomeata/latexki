@@ -14,23 +14,19 @@ import FilePath
 import Common
 import Wiki
 import Latex
+import Generic
 
-directoryFiles dir = getDirectoryContents dir  >>= return.(map ((dir++).("/"++))) >>=  filterM (doesFileExist)
-
-texDeps wi file = return []
-noDeps  wi file = return []
-
-tex2html wi tex html = return ()
-generic2html wi file html = return ()
+directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
 
 pipes :: String -> [ ( String, WikiInfo -> FilePath -> FilePath -> IO () ) ]
-pipes "tex"   =  [("pdf",  tex2pdf      ),
-                  ("html", tex2html     ) ]
+pipes "tex"   =  [("pdf",  tex2pdf      )]
+--                  ("html", tex2html     ) ]
 pipes "latex" = pipes "tex"
 pipes ""      = [("html", wiki2html    ) ]
 pipes _       = [("html", generic2html ) ]
 
-deps wi "tex" = texDeps wi
+deps wi "tex"   = texDeps wi
+deps wi "latex" = deps wi "tex"
 deps wi _     = return.(const [])
 
 actions wi file = do 
@@ -40,13 +36,19 @@ actions wi file = do
         myDeps <- deps wi ext file
         return $ map (flip (,) (file:myDeps)) acts
 
+-- file1 depends upon file2
 needsUpdate file1 file2 = do 
+	putStrLn $ "  "++file1++" depends on "++file2
 	ex <- doesFileExist file1
-	if ex then do
+	ex2 <- doesFileExist file2
+	if not ex2 then do
+		putStrLn $ "WARNING: Dependency "++file2++" does not exist"
+		return False
+	  else if ex then do
 		date1 <- getModificationTime file1
 		date2 <- getModificationTime file2
 		return $ date1 < date2
-	  else return True
+	    else return True
 
 anyM cond list = mapM cond list >>= return.or
 
@@ -56,17 +58,15 @@ main = do
   exists <- doesDirectoryExist outdir
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
   setCurrentDirectory outdir
-  let datadir = "./data"
-
-  exported <- doesDirectoryExist (datadir++"/.svn")
+  exported <- doesDirectoryExist (datadir++".svn")
   if exported then
   	system ("(cd "++datadir++"; svn update)")
     else 
   	system ("svn checkout "++repos++" "++datadir)
 
   inputfiles <- directoryFiles datadir
-  old_outputs <- directoryFiles "."
-  let wi = WikiInfo { basenames = map ((\(_,m,_)->m).splitFilePath) inputfiles }
+  old_outputs <- directoryFiles "./"
+  let wi = WikiInfo { basenames = map basename inputfiles }
 
   putStr "Getting dependencies..."
   todo' <- mapM (actions wi) inputfiles >>= return.concat
@@ -78,6 +78,11 @@ main = do
 
   putStrLn "Generating files..."
   mapM_ (\(a,f) -> putStrLn (f++"...") >> a f) todo
+  putStrLn "Done."
+
+  putStrLn "Cleaning up..."
+  let delete = filter ((`notElem` (basenames wi)).basename) old_outputs
+  mapM_ (\f -> putStrLn ("Deleting "++f)  >> removeFile f) delete
   putStrLn "Done."
 
 

@@ -7,10 +7,9 @@ import Common
 import HtmlStyle
 
 wiki2html wi wiki html = do
-	let (_,basename,_) = splitFilePath wiki
 	content <- readFile wiki
 	let formatted = (links wi) $ unlines $ lineBased $ lines content
-	writeFile html $ htmlPage wi basename formatted 
+	writeFile html $ htmlPage wi (basename wiki) formatted 
 
 lineBased = prefo.paras.lists.(map headers).(map stripWhitespace)
 
@@ -63,8 +62,4 @@ links wi = concat.(links').words'
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "._-" ) 
 
 bracketLinks = id
-
-tagP name params body = "<"++name++concatMap (\(p,v)-> " "++p++"=\""++v++"\"") params ++">"++body++"</"++name++">"
-tag name body= tagP name [] body
-tagL name body= ["<"++name++">"]++body++["</"++name++">"]
 

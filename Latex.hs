@@ -1,9 +1,13 @@
-module Latex ( tex2pdf ) where
+module Latex ( tex2pdf, texDeps ) where
 
 import Maybe
+import Monad
+import Directory
 import System.Process
 import System.IO
 import System
+import Char
+import Common
 
 replicateCmd 0 cmd = return ExitSuccess
 replicateCmd n cmd = do
@@ -11,6 +15,31 @@ replicateCmd n cmd = do
 	case res of
 		ExitSuccess  -> replicateCmd (n-1) cmd
 		otherwise    -> return res
+
+uncomment ""            = ""
+uncomment "\\"          = "\\"
+uncomment ('\\':c:line) = '\\':c:uncomment line
+uncomment ('%':_)       = ""
+uncomment (c:line)      = c:uncomment line
+	
+findSimpleCommands ""                       = []
+findSimpleCommands ('\\':rest1) | n == '{'  = (command,param):findSimpleCommands rest3
+                                | otherwise =                 findSimpleCommands (n:rest2)
+	where (command,n:rest2) = span (isAlpha) rest1
+	      (param,rest3)     = span (/='}')   rest2
+findSimpleCommands (_:rest)                 =                 findSimpleCommands rest	      
+
+depCmds = [("input",".tex"),("include",".tex"),("usepackage",".sty")]
+texDeps wi tex = do
+	file' <- readFile tex
+	let file = (unlines.(map uncomment).lines) file'
+	    commands = findSimpleCommands file
+	    candits = catMaybes $  map (\(c,f) -> case lookup c depCmds of 
+	  			        		Just ext -> Just $ f++ext
+							Nothing -> Nothing          ) commands
+	    files = map ((datadir++)) candits
+	existing <- filterM (doesFileExist) files
+	return existing
 
 tex2pdf wi tex pdf = do
 	err <- replicateCmd 3 runLatex
@@ -21,3 +50,5 @@ tex2pdf wi tex pdf = do
   	writeNull <- return.Just =<< openFile "/dev/null" WriteMode
   	runProcess "pdflatex" [tex] Nothing Nothing readNull writeNull writeNull >>=
 		waitForProcess
+
+
