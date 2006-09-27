@@ -52,7 +52,7 @@ genHTML tex wi err = do
                 | otherwise          = 	"File not successfully created ("++(show err)++":"++
 	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File?")),
 	                              (tag "li" (aHref logFile "Latex-Logfile")),
-	                              (tag "li" (aHref (datadir++tex) "Latex-Source"))]))
+	                              (tag "li" (aHref tex     "Latex-Source"))]))
 	pdfFile = (basename tex) ++ ".pdf"				      
 	logFile = (basename tex) ++ ".log" 
 	target  = (basename tex) ++ ".html" 
