@@ -1,4 +1,7 @@
 module Common (
+	FileProcessor,
+	DepCalculator,
+
 	WikiInfo(WikiInfo),
 	sitemap,
 	basenames,
@@ -8,12 +11,18 @@ module Common (
 	triple3,
 	outputs,
 
+
 	basename,
 	splitFilePath,
 	filename,
 ) where
 
 import qualified FilePath as FP
+
+-- Data type
+
+type FileProcessor = FilePath -> WikiInfo -> IO ()
+type DepCalculator = FilePath -> WikiInfo -> IO [FilePath]
 
 data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] }
 
@@ -29,4 +38,4 @@ splitFilePath = FP.splitFilePath
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x
-triple3 (_,x,_) = x
+triple3 (_,_,x) = x

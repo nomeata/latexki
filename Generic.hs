@@ -4,7 +4,7 @@ import Common
 import HtmlStyle
 import Char
 
-procGeneric wi file = do 
+procGeneric file wi = do 
 	source <- readFile file
 	let content = if isReadable source then pre source else binary
 	    target  = (basename file) ++ ".html"

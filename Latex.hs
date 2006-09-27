@@ -30,7 +30,7 @@ findSimpleCommands ('\\':rest1) | n == '{'  = (command,param):findSimpleCommands
 findSimpleCommands (_:rest)                 =                 findSimpleCommands rest	      
 
 depCmds = [("input",".tex"),("include",".tex"),("usepackage",".sty")]
-texDeps wi tex = do
+texDeps tex wi = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	    commands = findSimpleCommands file
@@ -41,7 +41,7 @@ texDeps wi tex = do
 	existing <- filterM (doesFileExist) files
 	return existing
 
-procTex wi tex = do
+procTex tex wi = do
 	err <- replicateCmd 3 runLatex
 	putStrLn $ "Result: "++(show err)
 	return ()

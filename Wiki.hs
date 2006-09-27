@@ -6,7 +6,7 @@ import Char
 import Common
 import HtmlStyle
 
-procWiki wi wiki = do
+procWiki wiki wi = do
 	content <- readFile wiki
 	let formatted = (links wi) $ unlines $ lineBased $ lines content
 	    target    = (basename wiki) ++ ".html"
@@ -48,8 +48,12 @@ camelCase wi w | length w <= 3                            = w
                | isUpper (head w) && any isUpper (tail w) = linkPage wi w
             | otherwise                                = w
 
-linkPage wi a | a `elem` basenames wi = tagP "a" [("href", a ++".html")]  a
-	      | otherwise             = tagP "a" [("href", a ++".html")] (a++"?")
+linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
+              | otherwise             = a++"?"
+ where linkPageExt ext txt = tagP "a" [("href", a ++"." ++ ext)] txt
+       (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
+       more | null exts  = ""
+            | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
 
 links wi = concat.(links').words'
   where links' [] = []

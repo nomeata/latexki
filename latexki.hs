@@ -16,24 +16,25 @@ import Generic
 
 directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
 
-pipes :: String -> ( [String], WikiInfo -> FilePath -> IO () )
+pipes :: String -> ( [String], FileProcessor )
 pipes "tex"   = (["pdf","log"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html"], procWiki    )
 pipes _       = (["html"], procGeneric ) 
 
-deps wi "tex"   = texDeps wi
-deps wi "latex" = deps wi "tex"
-deps wi _     = return.(const [])
+deps :: String -> DepCalculator
+deps "tex"    = texDeps 
+deps "latex"  = deps "tex"
+deps _        = \file -> const (return [file])
 
-actions wi file = do 
+actions file = do 
 	let  (dir, basename, ext) = splitFilePath file
 	     withExt e       = basename++"."++e
 	     (exts, action)  = pipes ext
-	     act             = (action wi file, map withExt exts)
+	     act             = (action file, map withExt exts)
 	     sitemapEntry    = (basename, ext, exts)
-        myDeps <- deps wi ext file
-        return $ (sitemapEntry, act, file:myDeps)
+             myDeps          =  deps ext file
+        return $ (sitemapEntry, (act, myDeps))
 
 -- file1 depends upon file2
 needsUpdate file1 file2 = do 
@@ -65,20 +66,23 @@ main = do
   	system ("svn checkout "++repos++" "++datadir)
 
   inputfiles <- directoryFiles datadir
-  let wi = WikiInfo { sitemap = [] }
 
   putStr "Generating Sitemap..."
-  todo' <- mapM (actions wi) inputfiles 
-  putStrLn $ (show $ length todo')++" of these."
+  (sm, todo'') <- return.unzip =<< mapM actions inputfiles  
+  putStrLn $ (show $ length sm )++" base files."
   
-  let wi = WikiInfo { sitemap = map triple1 todo' }
+  let wi = WikiInfo { sitemap = sm }
 
-  putStr "Checking for up-to-dateness..."
-  todo <- filterM (\(_,(_,t),d) -> anyM2 needsUpdate t d) todo' >>= return.(map triple2)
+  putStr "Getting Dependencies..."
+  todo' <- mapM ( \(act,dep) -> dep wi >>= return.((,) act) ) todo'' 
+  putStrLn "Done."
+
+  putStrLn "Checking for up-to-dateness..."
+  todo <- filterM (\((_,t),d) -> anyM2 needsUpdate t d) todo' >>= return.(map fst)
   putStrLn $ (show $ length todo)++" left to do."
 
   putStrLn "Generating files..."
-  mapM_ (\(a,f) -> putStrLn ((concat(intersperse ", " f))++"...") >> a) todo
+  mapM_ (\(a,f) -> putStrLn ((concat(intersperse ", " f))++"...") >> a wi) todo
   putStrLn "Done."
 
   putStrLn "Cleaning up..."
