@@ -1,4 +1,4 @@
-module Wiki (wiki2html) where
+module Wiki (procWiki) where
 
 import FilePath
 import List
@@ -6,10 +6,11 @@ import Char
 import Common
 import HtmlStyle
 
-wiki2html wi wiki html = do
+procWiki wi wiki = do
 	content <- readFile wiki
 	let formatted = (links wi) $ unlines $ lineBased $ lines content
-	writeFile html $ htmlPage wi (basename wiki) formatted 
+	    target    = (basename wiki) ++ ".html"
+	writeFile target $ htmlPage wi (basename wiki) formatted 
 
 lineBased = prefo.paras.lists.(map headers).(map stripWhitespace)
 

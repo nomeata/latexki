@@ -1,9 +1,32 @@
-module Common (WikiInfo(WikiInfo), basenames, datadir, basename) where
+module Common (
+	WikiInfo(WikiInfo),
+	sitemap,
+	basenames,
+	datadir,
+	triple1,
+	triple2,
+	triple3,
+	outputs,
 
-import FilePath
+	basename,
+	splitFilePath,
+	filename,
+) where
 
-data WikiInfo = WikiInfo { basenames :: [String] }
+import qualified FilePath as FP
+
+data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] }
+
+basenames wi = map triple1 (sitemap wi)
+
+outputs wi = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) (sitemap wi)
 
 datadir = "./data/"
 
-basename = (\(_,m,_)->m).splitFilePath
+basename = triple2.splitFilePath
+filename = snd.FP.splitFileName 
+splitFilePath = FP.splitFilePath
+
+triple1 (x,_,_) = x
+triple2 (_,x,_) = x
+triple3 (_,x,_) = x

@@ -9,8 +9,6 @@ import Directory
 import Monad
 import List
 
-import FilePath
-
 import Common
 import Wiki
 import Latex
@@ -18,12 +16,11 @@ import Generic
 
 directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
 
-pipes :: String -> [ ( String, WikiInfo -> FilePath -> FilePath -> IO () ) ]
-pipes "tex"   =  [("pdf",  tex2pdf      )]
---                  ("html", tex2html     ) ]
+pipes :: String -> ( [String], WikiInfo -> FilePath -> IO () )
+pipes "tex"   = (["pdf","log"],  procTex  )
 pipes "latex" = pipes "tex"
-pipes ""      = [("html", wiki2html    ) ]
-pipes _       = [("html", generic2html ) ]
+pipes ""      = (["html"], procWiki    )
+pipes _       = (["html"], procGeneric ) 
 
 deps wi "tex"   = texDeps wi
 deps wi "latex" = deps wi "tex"
@@ -32,9 +29,11 @@ deps wi _     = return.(const [])
 actions wi file = do 
 	let  (dir, basename, ext) = splitFilePath file
 	     withExt e       = basename++"."++e
-	     acts            = map (\(to, action) ->(action wi file, (withExt to))) $ pipes ext
+	     (exts, action)  = pipes ext
+	     act             = (action wi file, map withExt exts)
+	     sitemapEntry    = (basename, ext, exts)
         myDeps <- deps wi ext file
-        return $ map (flip (,) (file:myDeps)) acts
+        return $ (sitemapEntry, act, file:myDeps)
 
 -- file1 depends upon file2
 needsUpdate file1 file2 = do 
@@ -50,7 +49,8 @@ needsUpdate file1 file2 = do
 		return $ date1 < date2
 	    else return True
 
-anyM cond list = mapM cond list >>= return.or
+anyM  cond list = mapM cond list >>= return.or
+anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >>= return.or
 
 main = do
   [repos,outdir] <- getArgs
@@ -65,23 +65,26 @@ main = do
   	system ("svn checkout "++repos++" "++datadir)
 
   inputfiles <- directoryFiles datadir
-  old_outputs <- directoryFiles "./"
-  let wi = WikiInfo { basenames = map basename inputfiles }
+  let wi = WikiInfo { sitemap = [] }
 
-  putStr "Getting dependencies..."
-  todo' <- mapM (actions wi) inputfiles >>= return.concat
+  putStr "Generating Sitemap..."
+  todo' <- mapM (actions wi) inputfiles 
   putStrLn $ (show $ length todo')++" of these."
+  
+  let wi = WikiInfo { sitemap = map triple1 todo' }
 
   putStr "Checking for up-to-dateness..."
-  todo <- filterM (\((_,t),d) -> anyM (t `needsUpdate`) d) todo' >>= return.(map fst)
+  todo <- filterM (\(_,(_,t),d) -> anyM2 needsUpdate t d) todo' >>= return.(map triple2)
   putStrLn $ (show $ length todo)++" left to do."
 
   putStrLn "Generating files..."
-  mapM_ (\(a,f) -> putStrLn (f++"...") >> a f) todo
+  mapM_ (\(a,f) -> putStrLn ((concat(intersperse ", " f))++"...") >> a) todo
   putStrLn "Done."
 
   putStrLn "Cleaning up..."
-  let delete = filter ((`notElem` (basenames wi)).basename) old_outputs
+  foundOutputs <- directoryFiles "./"
+  let expectedOutputs = outputs wi
+      delete = filter (`notElem` expectedOutputs) $ map filename foundOutputs
   mapM_ (\f -> putStrLn ("Deleting "++f)  >> removeFile f) delete
   putStrLn "Done."
 

@@ -1,13 +1,14 @@
-module Generic ( generic2html ) where
+module Generic ( procGeneric ) where
 
 import Common
 import HtmlStyle
 import Char
 
-generic2html wi file html = do 
+procGeneric wi file = do 
 	source <- readFile file
 	let content = if isReadable source then pre source else binary
-	writeFile html $ htmlPage wi (basename file) content 
+	    target  = (basename file) ++ ".html"
+	writeFile target $ htmlPage wi (basename file) content 
   where	isReadable = not.(any (=='\0'))
   	pre source = (tag "h1" file) ++
 	             (tagP "a" [("href",file)] "(download)") ++

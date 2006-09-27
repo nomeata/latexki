@@ -1,4 +1,4 @@
-module Latex ( tex2pdf, texDeps ) where
+module Latex ( procTex, texDeps ) where
 
 import Maybe
 import Monad
@@ -41,7 +41,7 @@ texDeps wi tex = do
 	existing <- filterM (doesFileExist) files
 	return existing
 
-tex2pdf wi tex pdf = do
+procTex wi tex = do
 	err <- replicateCmd 3 runLatex
 	putStrLn $ "Result: "++(show err)
 	return ()
