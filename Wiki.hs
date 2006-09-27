@@ -66,5 +66,3 @@ links wi = concat.(links').words'
 
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "._-" ) 
 
-bracketLinks = id
-

@@ -1,4 +1,4 @@
-module HtmlStyle (htmlPage, tagP, tag, tagL) where
+module HtmlStyle (htmlPage, tagP, tag, tagL, aHref) where
 
 htmlPage wi title body = 
   "<html><head><title>"++title++
@@ -8,3 +8,4 @@ tagP name params body = "<"++name++concatMap (\(p,v)-> " "++p++"=\""++v++"\"") p
 tag name body= tagP name [] body
 tagL name body= ["<"++name++">"]++body++["</"++name++">"]
 
+aHref href body = tagP "a" [("href",href)] body

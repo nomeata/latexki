@@ -8,6 +8,7 @@ import System.IO
 import System
 import Char
 import Common
+import HtmlStyle
 
 replicateCmd 0 cmd = return ExitSuccess
 replicateCmd n cmd = do
@@ -41,9 +42,26 @@ texDeps tex wi = do
 	existing <- filterM (doesFileExist) files
 	return (tex:existing)
 
+genHTML tex wi err = do 
+	writeFile target $ htmlPage wi tex $ title ++ content
+ where  title = tag "h1" ("Latex File: "++tex)
+        content | err == ExitSuccess = 	"File successfully created:" ++
+	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File")),
+	                              (tag "li" (aHref logFile "Latex-Logfile")),
+	                              (tag "li" (aHref (datadir++tex) "Latex-Source"))]))
+                | otherwise          = 	"File not successfully created ("++(show err)++":"++
+	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File?")),
+	                              (tag "li" (aHref logFile "Latex-Logfile")),
+	                              (tag "li" (aHref (datadir++tex) "Latex-Source"))]))
+	pdfFile = (basename tex) ++ ".pdf"				      
+	logFile = (basename tex) ++ ".log" 
+	target  = (basename tex) ++ ".html" 
+
+
 procTex tex wi = do
 	err <- replicateCmd 3 runLatex
 	putStrLn $ "Result: "++(show err)
+	genHTML tex wi err
 	return ()
   where runLatex = do
   	readNull <- return.Just =<< openFile "/dev/null" ReadMode

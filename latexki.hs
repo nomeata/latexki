@@ -17,7 +17,7 @@ import Generic
 directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
 
 pipes :: String -> ( [String], FileProcessor )
-pipes "tex"   = (["pdf","log"],  procTex  )
+pipes "tex"   = (["html","pdf","log"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html"], procWiki    )
 pipes _       = (["html"], procGeneric ) 
