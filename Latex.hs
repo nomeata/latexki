@@ -39,7 +39,7 @@ texDeps tex wi = do
 							Nothing -> Nothing          ) commands
 	    files = map ((datadir++)) candits
 	existing <- filterM (doesFileExist) files
-	return existing
+	return (tex:existing)
 
 procTex tex wi = do
 	err <- replicateCmd 3 runLatex
