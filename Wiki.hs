@@ -8,21 +8,20 @@ import HtmlStyle
 
 procWiki wiki wi = do
 	content <- readFile wiki
-	let formatted = (links wi) $ unlines $ lineBased $ lines content
+	let formatted = links wi $ unlines $ lineBased wi $ lines content
 	    target    = (basename wiki) ++ ".html"
 	writeFile target $ htmlPage wi (basename wiki) formatted 
 
-lineBased = prefo.paras.lists.(map headers).(map stripWhitespace)
+lineBased wi = prefo.paras.lists.(map headers).(specials wi).(map stripWhitespace)
 
 stripWhitespace = reverse.(dropWhile (==' ')).reverse
 
 headers line | hl == 0  = line
-             | hl >  0  = "<h"++(show hl)++">"++header++"</h"++(show hl)++">"
+             | hl >  0  = tag ("h"++(show hl)) header
 	where (hl, header) = parseHeader line
 
-parseHeader line | length line <= 3                     = (0, line)
-                 | head line == '=' && last line == '=' = add $ parseHeader $ (tail.init) line
-                 | otherwise                            = (0, line)
+parseHeader line | "=" `encloses` line  = add $ parseHeader $ takeout "=" line
+                 | otherwise            = (0, line)
 	where add (x,y) = (x+1,y)
 
 groupLines cond markup lines | null list = cont
@@ -32,7 +31,7 @@ groupLines cond markup lines | null list = cont
 	            | otherwise = head rest:(groupLines cond markup (tail rest))
 
 lists = groupLines (isPrefixOf "*") (\list -> tagL "ul" $ map ((tag "li").tail) list)
-paras = groupLines isJustText (tagL "p")
+paras = groupLines isJustText       (tagL "p")
 prefo = groupLines (isPrefixOf " ") (tagL "pre")
 
 isJustText l = not (isPrefixOf "<" l) &&
@@ -43,10 +42,10 @@ words' text = a : cont
 	      cont | null b    = []
 	           | otherwise = [head b] : words' (tail b)
 
-camelCase wi w | length w <= 3                            = w
+camelCase wi w | length w <= 2                            = w
                | any (not.isAlphaNum) w                   = w
                | isUpper (head w) && any isUpper (tail w) = linkPage wi w
-            | otherwise                                = w
+               | otherwise                                = w
 
 linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
               | otherwise             = a++"?"
@@ -66,3 +65,15 @@ links wi = concat.(links').words'
 
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "._-" ) 
 
+specials wi []       = []
+specials wi  (line:r) | "##" `encloses` line = (case map toLower $ takeout "##" line of
+				  		"hello"   -> ["Hello World"]
+						-- The next line is cool.
+						"sitemap" -> map ("* ["\/"]") (basenames wi)
+						huh       -> ["Unknown Command \""++huh++"\""] 
+				           ) ++ specials wi r
+	 	      | otherwise            = line : specials wi r
+
+encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
+takeout  sub    = (drop (length sub)).reverse.(drop (length sub)).reverse
+(\/) pre post str = pre ++ str ++ post
