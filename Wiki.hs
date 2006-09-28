@@ -30,9 +30,9 @@ groupLines cond markup lines | null list = cont
 	      cont  | null rest = []
 	            | otherwise = head rest:(groupLines cond markup (tail rest))
 
-lists = groupLines (isPrefixOf "*") (\list -> tagL "ul" $ map ((tag "li").tail) list)
-paras = groupLines isJustText       (tagL "p")
-prefo = groupLines (isPrefixOf " ") (tagL "pre")
+lists = groupLines (isPrefixOf "*") ((tagL "ul").(map ((tag "li").tail)))
+paras = groupLines isJustText       ( tagL "p")
+prefo = groupLines (isPrefixOf " ") ((tagL "pre").(map ((tag "pre").tail)))
 
 isJustText l = not (isPrefixOf "<" l) &&
 	       not (null l)
@@ -49,7 +49,7 @@ camelCase wi w | length w <= 2                            = w
 
 linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
               | otherwise             = a++"?"
- where linkPageExt ext txt = tagP "a" [("href", a ++"." ++ ext)] txt
+ where linkPageExt ext txt = aHref(a ++"." ++ ext) txt
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""
             | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
@@ -69,7 +69,7 @@ specials wi []       = []
 specials wi  (line:r) | "##" `encloses` line = (case map toLower $ takeout "##" line of
 				  		"hello"   -> ["Hello World"]
 						-- The next line is cool.
-						"sitemap" -> map ("* ["\/"]") (basenames wi)
+						"sitemap" -> map ("* ["\/"]") $ sort $ basenames wi
 						huh       -> ["Unknown Command \""++huh++"\""] 
 				           ) ++ specials wi r
 	 	      | otherwise            = line : specials wi r
