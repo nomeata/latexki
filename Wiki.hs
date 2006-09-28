@@ -42,10 +42,8 @@ words' text = a : cont
 	      cont | null b    = []
 	           | otherwise = [head b] : words' (tail b)
 
-camelCase wi w | length w <= 2                            = w
-               | any (not.isAlphaNum) w                   = w
-               | isUpper (head w) && any isUpper (tail w) = linkPage wi w
-               | otherwise                                = w
+camelCase wi w = if isCamelCase w then linkPage wi w else w
+isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
 linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
               | otherwise             = a++"?"
