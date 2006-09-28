@@ -32,7 +32,7 @@ groupLines cond markup lines | null list = cont
 
 lists = groupLines (isPrefixOf "*") ((tagL "ul").(map ((tag "li").tail)))
 paras = groupLines isJustText       ( tagL "p")
-prefo = groupLines (isPrefixOf " ") ((tagL "pre").(map ((tag "pre").tail)))
+prefo = groupLines (isPrefixOf " ") ((tagL "pre").(map tail))
 
 isJustText l = not (isPrefixOf "<" l) &&
 	       not (null l)
