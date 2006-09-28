@@ -43,6 +43,7 @@ words' text = a : cont
 	           | otherwise = [head b] : words' (tail b)
 
 camelCase wi w = if isCamelCase w then linkPage wi w else w
+isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
 linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
