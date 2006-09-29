@@ -35,7 +35,17 @@ def main ():
 		conf_rev = None
 		done = False
 
-		(new,ext) = exists(basename)
+		if 'basename' in form:
+			basename = form.getfirst('basename')
+			assert 'type' in form, "Extension forgotten"
+			ext = form.getfirst('type')
+			if   ext = "!wiki":
+				ext = none
+			elif ext = "!other":
+				assert 'ext' in form, "Extension forgotten"
+				ext = form.getfirst('ext')
+		
+		(new,ext) = exists(basename, ext)
 
 		if ext:
 			filename = basename+"."+ext
@@ -56,27 +66,33 @@ def main ():
 			file(filename,'w').write(new_content)
 			if new:
 				add()
-
-			if 'conf_rev' in form:
-				if 'checked_conflict' in form:
-					new_rev = update(form.getfirst('conf_rev') )
-					assert conflict(), "This should be a conflict, strange..."
-					file(filename,'w').write(new_content)
-					resolve()
-				else:
-					error = "Please do resolve your conflict"
-
-			new_rev = update()
-			if conflict():
-				conf_rev = new_rev
-			else:
 				(error,new_rev) = commit()
 				if not error:
 					done = True
+			else:
+				if 'conf_rev' in form:
+					if 'checked_conflict' in form:
+						new_rev = update(form.getfirst('conf_rev') )
+						assert conflict(), "This should be a conflict, strange..."
+						file(filename,'w').write(new_content)
+						resolve()
+					else:
+						error = "Please do resolve your conflict"
+
+				new_rev = update()
+				if conflict():
+					conf_rev = new_rev
+				else:
+					(error,new_rev) = commit()
+					if not error:
+						done = True
 		
 		# do SVN stuff here
 
-		content = file(filename,'r').read()
+		if filename:
+			content = file(filename,'r').read()
+		else:
+			content = 'Enter new page here'
 
 		print_headers()
 		if done:
@@ -121,7 +137,7 @@ def commit(log = 'No log message'):
 		return ("Commit failed :-(", None)
 	
 
-def exists(basename):
+def exists(basename, user_ext):
 	files =  client.ls(repos)
 	sr = (lambda str: os.path.basename(str))
 	matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
@@ -133,6 +149,8 @@ def exists(basename):
 			return (False,None)
 		else:
 			ext = sr(matches[0]['name'])[len(basename)+1:]
+			if user_ext:
+				assert user_ext == ext, "Extensions don't match, but that's no use case"
 			return (False, ext)
 		
 	assert False, str(we)
