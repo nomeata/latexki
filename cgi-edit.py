@@ -37,7 +37,6 @@ def main ():
 		conf_rev = None
 		done = False
 
-		ext = None
 		if 'basename' in form:
 			basename = form.getfirst('basename')
 			assert 'type' in form, "Extension choice forgotten"
@@ -47,8 +46,12 @@ def main ():
 			elif ext == "!other":
 				assert 'ext' in form, "Extension entry forgotten"
 				ext = form.getfirst('ext')
-		
-		(new,ext) = exists(basename, ext)
+			(new,old_ext) = exists(basename)
+			assert new or ext == old_ext, "File exists with different extension"
+		else:
+			(new,ext) = exists(basename)
+			
+
 		if new and basename:
 			assert basename.isalnum(), "Please use only alphanumerical page names"
 
@@ -141,20 +144,18 @@ def commit(log = 'No log message'):
 		return ("Commit failed :-(", None)
 	
 
-def exists(basename, user_ext):
+def exists(basename):
 	files =  client.ls(repos)
 	sr = (lambda str: os.path.basename(str))
 	matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
 	if len(matches) == 0:
-		return (True, user_ext)
+		return (True, None)
 	else:
 		assert len(matches) == 1, "More than one file with this basename, fix the repository!"
 		if sr(matches[0]['name']) == basename:
 			return (False,None)
 		else:
 			ext = sr(matches[0]['name'])[len(basename)+1:]
-			if user_ext:
-				assert user_ext == ext, "File already exists with different extension"
 			return (False, ext)
 		
 
