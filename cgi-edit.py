@@ -33,7 +33,7 @@ def main ():
 		form = cgi.FieldStorage()
 
 		error = None
-		old_rev = None
+		old_rev = 0
 		conf_rev = None
 		done = False
 
