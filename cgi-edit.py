@@ -40,6 +40,7 @@ def main ():
 		ext = None
 		if 'basename' in form:
 			basename = form.getfirst('basename')
+			assert basename.isalnum(), "Please use only alphanumerical page names"
 			assert 'type' in form, "Extension forgotten"
 			ext = form.getfirst('type')
 			if   ext == "!wiki":
@@ -237,8 +238,8 @@ def print_success(new, basename, ext, new_rev):
 
 
 def ptype(ext):
-	if ext: type = FILETYPES.get(ext,"\".%s\" file" % esc(ext))
-	else:   type = "regular wiki page"
+	if ext: return FILETYPES.get(ext,"\".%s\" file" % esc(ext))
+	else:   return "regular wiki page"
 
 
 main()
