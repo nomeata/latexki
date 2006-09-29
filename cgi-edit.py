@@ -93,7 +93,7 @@ def main ():
 				if conflict():
 					conf_rev = new_rev
 				else:
-					(error,new_rev) = commit()
+					(error,new_rev) = commit(log)
 					if not error:
 						done = True
 		
