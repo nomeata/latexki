@@ -181,7 +181,7 @@ def print_page(new=True, basename=None, ext=None, content=None, rev=None, conf_r
 			<input type="text" name="ext" /> '''%{'nameform':nameform}
 	else:
 		title = "Editing page \"%s\" at revision %i" % (basename,rev)
-		pageform = '<h3>%(basename)s, a %(type)s' % { 'basename':esc(basename), 'type':type(ext)}
+		pageform = '<h3>%(basename)s, a %(type)s' % { 'basename':esc(basename), 'type':ptype(ext)}
 	
 	errortext = ''
 	if error:
@@ -223,7 +223,7 @@ def print_page(new=True, basename=None, ext=None, content=None, rev=None, conf_r
 
 def print_success(new, basename, ext, new_rev):
 	title = 'Successful commit'
-	text = "Sucessfully commited %s (a %s) to revision %i" %( esc(basename), type(ext), new_rev)
+	text = "Sucessfully commited %s (a %s) to revision %i" %( esc(basename), ptype(ext), new_rev)
 	print '''
 <html>
 <head>
@@ -236,7 +236,7 @@ def print_success(new, basename, ext, new_rev):
 </html>''' % { 'title': title, 'text': text}
 
 
-def type(ext):
+def ptype(ext):
 	if ext: type = FILETYPES.get(ext,"\".%s\" file" % esc(ext))
 	else:   type = "regular wiki page"
 
