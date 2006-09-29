@@ -180,7 +180,7 @@ def print_page(new=True, basename=None, ext=None, content=None, rev=None, conf_r
 			<input type="radio" name="type" value="!wiki">Wiki page</input>
 			<input type="radio" name="type" value="tex">LaTeX page</input>
 			<input type="radio" name="type" value="!other">Other, specify extension:
-			<input type="text" name="ext" /> '''%{'nameform':nameform}
+			<input type="text" name="ext" size="5" /> '''%{'nameform':nameform}
 	else:
 		title = "Editing page \"%s\" at revision %i" % (basename,rev)
 		pageform = '<h3>%(basename)s, a %(type)s' % { 'basename':esc(basename), 'type':ptype(ext)}
