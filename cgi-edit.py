@@ -30,6 +30,7 @@ def main ():
 		assert repos, "Need LATEXKI_REPOS environment variable"
 		
 		prepare_svn()
+		form = cgi.FieldStorage()
 
 		error = None
 		conf_rev = None
@@ -52,7 +53,6 @@ def main ():
 		else:
 			filename = basename
 
-		form = cgi.FieldStorage()
 
 
 		if not new:
