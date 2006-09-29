@@ -9,7 +9,7 @@ import cgitb; cgitb.enable()
 
 import pysvn
 
-def esc(str): return cgi.escape(str)
+def esc(str): return cgi.escape(str, True)
 
 FILETYPES={
 	'tex':'Latex File',
@@ -36,6 +36,7 @@ def main ():
 		old_rev = 0
 		conf_rev = None
 		done = False
+		log = ''
 
 		if 'basename' in form:
 			basename = form.getfirst('basename')
@@ -69,11 +70,13 @@ def main ():
 				old_rev = update()
 
 		if 'content' in form:
+			assert 'comment' in form, "Commit comment is compulsory"
+			log = form.getfirst('comment')
 			new_content = form.getfirst('content').replace('\r\n','\n') # is this an HACK?
 			file(filename,'w').write(new_content)
 			if new:
 				add()
-				(error,new_rev) = commit()
+				(error,new_rev) = commit(log)
 				if not error:
 					done = True
 			else:
@@ -105,7 +108,7 @@ def main ():
 		if done:
 			print_success(new, basename, ext, new_rev)
 		else:
-			print_page(new, basename, ext, content, old_rev, conf_rev, error)
+			print_page(new, basename, ext, content, log, old_rev, conf_rev, error)
 
 	finally:
 		os.chdir("/")
@@ -163,7 +166,7 @@ def print_headers():
 	print "Content-type: text/html"
 	print
 
-def print_page(new=True, basename=None, ext=None, content=None, rev=None, conf_rev=None, error=None):
+def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	if new:
 		if basename:
 			title = "Creating new page \"%s\"" % basename
@@ -204,12 +207,14 @@ def print_page(new=True, basename=None, ext=None, content=None, rev=None, conf_r
 	<h3>Content</h3>
 	<textarea name="content" cols="80" rows="30">%(content)s</textarea>
 	<input type="hidden" name="revision" value="%(rev)i"/>
+	<h3>Commit log entry</h3>
+	<input type="text" name="comment" cols="80" value=="%(comment)s"/> (compulsory)
 	<h3>Commit changes</h3>
 	%(conftext)s
 	<button type="submit">Commit changes
 	</button>
 	</form>''' % { 'pageform':pageform, 'content': esc(content), 'self_uri':esc(self_uri),
-	               'conftext':conftext, 'rev':rev}
+	               'conftext':conftext, 'rev':rev, 'comment':esc(log)}
 	print '''
 <html>
 <head>
