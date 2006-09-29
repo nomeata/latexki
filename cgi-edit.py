@@ -40,7 +40,6 @@ def main ():
 		ext = None
 		if 'basename' in form:
 			basename = form.getfirst('basename')
-			assert basename.isalnum(), "Please use only alphanumerical page names"
 			assert 'type' in form, "Extension forgotten"
 			ext = form.getfirst('type')
 			if   ext == "!wiki":
@@ -50,6 +49,8 @@ def main ():
 				ext = form.getfirst('ext')
 		
 		(new,ext) = exists(basename, ext)
+		if new:
+			assert basename.isalnum(), "Please use only alphanumerical page names"
 
 		if ext:
 			filename = basename+"."+ext
