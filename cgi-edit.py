@@ -40,12 +40,12 @@ def main ():
 		ext = None
 		if 'basename' in form:
 			basename = form.getfirst('basename')
-			assert 'type' in form, "Extension forgotten"
+			assert 'type' in form, "Extension choice forgotten"
 			ext = form.getfirst('type')
 			if   ext == "!wiki":
 				ext = None
 			elif ext == "!other":
-				assert 'ext' in form, "Extension forgotten"
+				assert 'ext' in form, "Extension entry forgotten"
 				ext = form.getfirst('ext')
 		
 		(new,ext) = exists(basename, ext)
@@ -154,7 +154,7 @@ def exists(basename, user_ext):
 		else:
 			ext = sr(matches[0]['name'])[len(basename)+1:]
 			if user_ext:
-				assert user_ext == ext, "Extensions don't match, but that's no use case"
+				assert user_ext == ext, "File already exists with different extension"
 			return (False, ext)
 		
 	assert False, str(we)
