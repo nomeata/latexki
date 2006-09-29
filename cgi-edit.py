@@ -49,7 +49,7 @@ def main ():
 				ext = form.getfirst('ext')
 		
 		(new,ext) = exists(basename, ext)
-		if new:
+		if new and basename:
 			assert basename.isalnum(), "Please use only alphanumerical page names"
 
 		if ext:
