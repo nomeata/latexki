@@ -146,7 +146,7 @@ def exists(basename, user_ext):
 	sr = (lambda str: os.path.basename(str))
 	matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
 	if len(matches) == 0:
-		return (True, None)
+		return (True, user_ext)
 	else:
 		assert len(matches) == 1, "More than one file with this basename, fix the repository!"
 		if sr(matches[0]['name']) == basename:
@@ -157,8 +157,6 @@ def exists(basename, user_ext):
 				assert user_ext == ext, "File already exists with different extension"
 			return (False, ext)
 		
-	assert False, str(we)
-	return (True,None)
 
 def print_headers():
 	print "Content-type: text/html"
