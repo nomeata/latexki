@@ -47,7 +47,7 @@ isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
 linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = a++"?"
+              | otherwise             = a++"<em>?</em>"
  where linkPageExt ext txt = aHref(a ++"." ++ ext) txt
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""
