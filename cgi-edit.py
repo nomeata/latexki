@@ -61,6 +61,7 @@ def main ():
 				if 'checked_conflict' in form:
 					new_rev = update(form.getfirst('conf_rev') )
 					assert conflict(), "This should be a conflict, strange..."
+					file(filename,'w').write(new_content)
 					resolve()
 				else:
 					error = "Please do resolve your conflict"
