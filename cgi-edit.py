@@ -36,6 +36,7 @@ def main ():
 		conf_rev = None
 		done = False
 
+		ext = None
 		if 'basename' in form:
 			basename = form.getfirst('basename')
 			assert 'type' in form, "Extension forgotten"
