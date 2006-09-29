@@ -39,7 +39,7 @@ def main ():
 			basename = form.getfirst('basename')
 			assert 'type' in form, "Extension forgotten"
 			ext = form.getfirst('type')
-			if   ext = "!wiki":
+			if ext == "!wiki":
 				ext = none
 			elif ext = "!other":
 				assert 'ext' in form, "Extension forgotten"
