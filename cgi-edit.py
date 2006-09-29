@@ -219,10 +219,21 @@ def print_page(new=True, basename=None, ext=None, content=None, rev=None, conf_r
 %(error)s
 %(form)s
 </body>
-</html>''' % { 'title': cgi.escape(title), 'form': form, 'error': errortext}
+</html>''' % { 'title': esc(title), 'form': form, 'error': errortext}
 
 def print_success(new, basename, ext, new_rev):
-	print "Sucessfully commited %s (a %s) to revision %i" %( esc(basename), type(ext), new_rev)
+	title = 'Successful commit'
+	text = "Sucessfully commited %s (a %s) to revision %i" %( esc(basename), type(ext), new_rev)
+	print '''
+<html>
+<head>
+<title>%(title)s</title>
+</head>
+<boddy>
+<h1>%(title)s</h1>
+%(text)s
+</body>
+</html>''' % { 'title': title, 'text': text}
 
 
 def type(ext):
