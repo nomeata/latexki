@@ -68,10 +68,10 @@ def main ():
 			new_rev = update()
 			if conflict():
 				conf_rev = new_rev
-
-			(error,new_rev) = commit()
-			if not error:
-				done = True
+			else:
+				(error,new_rev) = commit()
+				if not error:
+					done = True
 		
 		# do SVN stuff here
 
