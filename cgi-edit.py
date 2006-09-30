@@ -15,7 +15,7 @@ FILETYPES={
 	'tex':       'Latex File',
 	'hs':        'Haskell Code File',
 	'py':        'Python Code File',
-	'wiki-conf': 'Wiki Configuration File'.
+	'wiki-conf': 'Wiki Configuration File',
 }
 
 def main ():
