@@ -25,6 +25,9 @@ div.menu {
 	font-family: sans;
 }
 
+/* IE only: */
+* html div.menu { position: absolute }
+
 div.menu ul {
 	margin: 0px;
 	padding:0px;
