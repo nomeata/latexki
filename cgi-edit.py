@@ -12,9 +12,10 @@ import pysvn
 def esc(str): return cgi.escape(str, True)
 
 FILETYPES={
-	'tex':'Latex File',
-	'hs': 'Haskell Code File',
-	'py': 'Python Code File',
+	'tex':       'Latex File',
+	'hs':        'Haskell Code File',
+	'py':        'Python Code File',
+	'wiki-conf': 'Wiki Configuration File'.
 }
 
 def main ():

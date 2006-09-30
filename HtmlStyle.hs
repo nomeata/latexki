@@ -1,7 +1,9 @@
 module HtmlStyle (htmlPage, tagP, tag, tagL, aHref) where
 
+import Common
+
 htmlPage wi title body = 
-  "<html><head><title>"++title++
+  "<html><head><title>"++(mainTitle wi)++" - "++title++
   "</title></head><body>"++body++"</body></html>"
 
 tagP name params body = "<"++name++concatMap (\(p,v)-> " "++p++"=\""++v++"\"") params ++">"++body++"</"++name++">"

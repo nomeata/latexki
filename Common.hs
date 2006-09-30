@@ -4,13 +4,15 @@ module Common (
 
 	WikiInfo(WikiInfo),
 	sitemap,
+	mainTitle,
 	basenames,
+	outputs,
+
 	datadir,
+
 	triple1,
 	triple2,
 	triple3,
-	outputs,
-
 
 	basename,
 	splitFilePath,
@@ -24,7 +26,7 @@ import qualified FilePath as FP
 type FileProcessor = FilePath -> WikiInfo -> IO ()
 type DepCalculator = FilePath -> WikiInfo -> IO [FilePath]
 
-data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] }
+data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , mainTitle :: String }
 
 basenames wi = map triple1 (sitemap wi)
 
