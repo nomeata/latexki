@@ -14,7 +14,7 @@ procGeneric file wi = do
   	pre source = (tag "h1" file) ++
 	             (tagP "a" [("href",file)] "(download)") ++
 	  	     (tag "h2" "Source")++
-		     (tag "pre" source)
+		     (tag "pre" $ escape source)
   	binary   = (tag "h1" file) ++
 	           (tagP "a" [("href",file)] "(download)") 
 

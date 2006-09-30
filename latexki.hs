@@ -20,7 +20,7 @@ pipes :: String -> ( [String], FileProcessor )
 pipes "tex"   = (["html","pdf","log"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html"], procWiki    )
-pipes "cs"    = (["html","css"], procCopyGen ) 
+pipes "css"   = (["html","css"], procCopyGen ) 
 pipes _       = (["html"], procGeneric ) 
 
 deps :: String -> DepCalculator

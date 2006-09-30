@@ -1,6 +1,7 @@
-module HtmlStyle (htmlPage, tagP, tag, tagL, aHref) where
+module HtmlStyle (htmlPage, tagP, tag, tagL, aHref, escape) where
 
 import Common
+import Maybe
 
 htmlPage wi title basename body = 
   tag "html" ((
@@ -29,3 +30,7 @@ tag name body= tagP name [] body
 tagL name body= ["<"++name++">"]++body++["</"++name++">"]
 
 aHref href body = tagP "a" [("href",href)] body
+
+escapes = [('<',"&lt;"),('>',"&gt;"),('&',"&amp;"),('"',"&quot;") ]
+escape ""    = ""
+escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
