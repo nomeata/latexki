@@ -210,7 +210,8 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	<textarea name="content" cols="80" rows="30">%(content)s</textarea>
 	<input type="hidden" name="revision" value="%(rev)i"/>
 	<h3>Commit log entry</h3>
-	<input type="text" name="comment" cols="80" value="%(comment)s"/> (compulsory)
+	Please describe your changes. This is mandatory.<br/>
+	<input type="text" name="comment" size="80" value="%(comment)s"/>
 	<h3>Commit changes</h3>
 	%(conftext)s
 	<button type="submit">Commit changes
