@@ -8,7 +8,6 @@ import System
 import Directory
 import Monad
 import List
-import Maybe
 
 import Common
 import Wiki
@@ -21,6 +20,7 @@ pipes :: String -> ( [String], FileProcessor )
 pipes "tex"   = (["html","pdf","log"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html"], procWiki    )
+pipes "cs"    = (["html","css"], procCopyGen ) 
 pipes _       = (["html"], procGeneric ) 
 
 deps :: String -> DepCalculator
@@ -57,10 +57,10 @@ anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >
 readConfig = do 
 	exists <- doesFileExist file
 	if exists then
-		return.(fromMaybe "A Wiki").(lookup "title").(map extract).(filter (not.isComment)).lines =<< readFile file
+		return.(map extract).(filter (not.isComment)).lines =<< readFile file
 	  else
-		return "A Wiki"
-  where file = "latexki-main.wiki-conf"		
+		return []
+  where file = datadir ++ "latexki-main.wiki-conf"		
   	isComment ('#':_) = True
 	isComment l  | all (`elem` whitespace) l = True
 	             | otherwise            = False
@@ -83,14 +83,14 @@ main = do
   inputfiles <- directoryFiles datadir
 
   putStr "Reading Configuration..."
-  title <- readConfig
+  config <- readConfig
   putStrLn "done."
 
   putStr "Generating Sitemap..."
   (sm, todo'') <- return.unzip =<< mapM actions inputfiles  
   putStrLn $ (show $ length sm )++" base files."
   
-  let wi = WikiInfo { sitemap = sm , mainTitle = title}
+  let wi = WikiInfo { sitemap = sm , wikiConfig = config}
 
   putStr "Getting Dependencies..."
   todo' <- mapM ( \(act,dep) -> dep wi >>= return.((,) act) ) todo'' 

@@ -10,7 +10,7 @@ procWiki wiki wi = do
 	content <- readFile wiki
 	let formatted = links wi $ unlines $ lineBased wi $ lines content
 	    target    = (basename wiki) ++ ".html"
-	writeFile target $ htmlPage wi (basename wiki) formatted 
+	writeFile target $ htmlPage wi (basename wiki) (basename wiki) formatted 
 
 lineBased wi = prefo.paras.lists.(map headers).(specials wi).(map stripWhitespace)
 

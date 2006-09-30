@@ -1,0 +1,18 @@
+body {
+	background-color: gray
+}
+
+div.content {
+	margin: 30px 80px 5px 80px;
+	border: 1px solid black;
+	background-color: white;
+}
+
+div.menu {
+	position: fixed;
+	width:60px;
+	top:10px;
+	left:10px;
+	border: 1px solid black;
+	background-color:white;
+}

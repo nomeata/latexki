@@ -43,7 +43,7 @@ texDeps tex wi = do
 	return (tex:existing)
 
 genHTML tex wi err = do 
-	writeFile target $ htmlPage wi tex $ title ++ content
+	writeFile target $ htmlPage wi tex (basename tex) $ title ++ content
  where  title = tag "h1" ("Latex File: "++tex)
         content | err == ExitSuccess = 	"File successfully created:" ++
 	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File")),

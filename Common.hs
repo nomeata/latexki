@@ -4,6 +4,7 @@ module Common (
 
 	WikiInfo(WikiInfo),
 	sitemap,
+	wikiConfig,
 	mainTitle,
 	basenames,
 	outputs,
@@ -20,13 +21,15 @@ module Common (
 ) where
 
 import qualified FilePath as FP
+import Maybe
 
 -- Data type
 
 type FileProcessor = FilePath -> WikiInfo -> IO ()
 type DepCalculator = FilePath -> WikiInfo -> IO [FilePath]
 
-data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , mainTitle :: String }
+data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , wikiConfig :: [(String,String)] }
+mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
 
 basenames wi = map triple1 (sitemap wi)
 
