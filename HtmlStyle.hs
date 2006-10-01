@@ -4,12 +4,13 @@ import Common
 import Maybe
 
 htmlPage wi title basename body = 
+  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" ++ (
   tag "html" ((
-  	tag "head" ((
-		tag "title" ((mainTitle wi)++" - "++title++"</title>")
-  	)++(
+  	tag "head" ( concat [
+		tagP "meta" [("http-equiv","Content-Type"),("content","text/html; charset=UTF-8")] "",
+		tag "title" ((mainTitle wi)++" - "++title++"</title>"),
 		tagP "link" [("rel","stylesheet"),("type","text/css"),("href","latexki-style.css")] ""
-	))
+	])
   )++(
   	tag "body" ((
 		tagP "div" [("class","menu")] ( tag "ul" (
@@ -20,7 +21,7 @@ htmlPage wi title basename body =
 	)++(
 		tagP "div" [("class","content")] body
 	))
-  ))
+  )))
 	where li (t,l) = tag "li" $ aHref l $ t
 
 tagP name params body | null body = "<"++name++par++"/>"
