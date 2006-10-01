@@ -8,7 +8,7 @@ import HtmlStyle
 
 procWiki wiki wi = do
 	content <- readFile wiki
-	let formatted = links wi $ unlines $ lineBased wi $ lines content
+	let formatted = links wi $ unlines $ lineBased wi $ lines $ escape content
 	    target    = (basename wiki) ++ ".html"
 	writeFile target $ htmlPage wi (basename wiki) (basename wiki) formatted 
 
@@ -47,7 +47,7 @@ isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
 linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = a++"<em>?</em>"
+              | otherwise             = a
  where linkPageExt ext txt = aHref(a ++"." ++ ext) txt
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""
