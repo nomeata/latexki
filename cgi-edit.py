@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #
 # © 2006 Joachim Breitner
+#
 
 import cgi
 import os
