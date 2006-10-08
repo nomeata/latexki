@@ -22,7 +22,7 @@ FILETYPES={
 	'wiki-conf': 'Wiki Configuration File',
 }
 
-class Form(cgi.FieldStore):
+class Form(cgi.FieldStorage):
 	def __getitem__(self,item):
 		encoding = self.getfirst('_charset_') or 'UTF-8'
 		return self.getfirst('item').decode(encoding)
