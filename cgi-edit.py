@@ -23,9 +23,20 @@ FILETYPES={
 }
 
 class Form(cgi.FieldStorage):
-	def __getitem__(self,item):
+    def __getitem__(self,item):
 		encoding = self.getfirst('_charset_') or 'UTF-8'
 		return self.getfirst('item').decode(encoding)
+
+    def getfirst(self, key, default=None):
+        """ Return the first value received."""
+        if key in self:
+            value = cgi.FieldStorage.__getitem__(self,key)
+            if type(value) is type([]):
+                return value[0].value
+            else:
+                return value.value
+        else:
+            return default
 
 def main ():
 	global self_uri, repos, filename
