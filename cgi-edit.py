@@ -215,7 +215,7 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	<h3>Commit changes</h3>
 	%(conftext)s
 	<button type="submit">Commit changes
-	</button>
+	</button> (can take a while, please be patient)
 	</form>''' % { 'pageform':pageform, 'content': esc(content), 'self_uri':esc(self_uri),
 	               'conftext':conftext, 'rev':rev, 'comment':esc(log)}
 	print '''
