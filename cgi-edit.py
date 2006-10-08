@@ -192,13 +192,13 @@ def print_headers():
 def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	if new:
 		if basename:
-			title = "Creating new page \"%s\"" % basename
+			title = u"Creating new page \"%s\"" % basename
 			nameform = esc(basename)
 		else:
-			title = "Creating new page"
-			nameform = '<input name="basename" type="text" size="50"/>'
+			title = u"Creating new page"
+			nameform = u'<input name="basename" type="text" size="50"/>'
 
-		pageform = '''
+		pageform = u'''
 			<h3>Page Name </h3>
 			%(nameform)s
 			<h3>Page Type</h3>
@@ -207,16 +207,16 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 			<input type="radio" name="type" value="!other">Other, specify extension:
 			<input type="text" name="ext" size="5" /> '''%{'nameform':nameform}
 	else:
-		title = "Editing page \"%s\" at revision %i" % (basename,rev)
-		pageform = '<h3>%(basename)s, a %(type)s' % { 'basename':esc(basename), 'type':ptype(ext)}
+		title = u"Editing page \"%s\" at revision %i" % (basename,rev)
+		pageform = u'<h3>%(basename)s, a %(type)s' % { 'basename':esc(basename), 'type':ptype(ext)}
 	
 	errortext = ''
 	if error:
-		errortext = '''<strong>There was an error:</strong> %s''' % esc(error)
+		errortext = u'''<strong>There was an error:</strong> %s''' % esc(error)
 	
 	conftext =  ''
 	if conf_rev:
-		conftext =  '''
+		conftext =  u'''
 			<input type="hidden" name="conf_rev" value="%(conf_rev)i"/>
 			<input type="checkbox" name="checked_conflict" value="true">
 			  There was a conflict with revision %(conf_rev)i. I hereby confirm that I have resolved the
@@ -224,7 +224,7 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 			</input><br/>
 		''' % {'conf_rev':conf_rev}
 
-	form = '''
+	form = u'''
 	<form action="%(self_uri)s" method="POST">
 	%(pageform)s
 	<h3>Content</h3>
@@ -240,7 +240,7 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	</button> (can take a while, please be patient)
 	</form>''' % { 'pageform':pageform, 'content': esc(content), 'self_uri':esc(self_uri),
 	               'conftext':conftext, 'rev':rev, 'comment':esc(log)}
-	print '''
+	print (u'''
 <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
 <html>
 <head>
@@ -252,7 +252,7 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 %(error)s
 %(form)s
 </body>
-</html>''' % { 'title': esc(title), 'form': form, 'error': errortext}
+</html>''' % { 'title': esc(title), 'form': form, 'error': errortext}).encode('utf8')
 
 def print_success(new, basename, ext, new_rev):
 	title = 'Successful commit'
