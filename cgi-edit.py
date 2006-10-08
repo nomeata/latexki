@@ -120,7 +120,7 @@ def prepare_svn():
 	global client
 	client = pysvn.Client()
 	zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
-	client.checkout(repos, svn_path,False,zero)
+	client.checkout(repos + svn_path,".",False,zero)
 
 def update(req_rev=None):
 	if req_rev:
