@@ -94,10 +94,10 @@ def main ():
 			assert 'comment' in form, "Commit comment is compulsory"
 			log = form['comment']
 			new_content = form['content'].replace('\r\n','\n') # is this an HACK?
-			file(filename,'w').write(new_content)
+			file(filename,'w').write(new_content.encode('utf8')
 			if new:
 				add()
-				(error,new_rev) = commit(log)
+				(error,new_rev) = commit(log.encode('utf8'))
 				if not error:
 					done = True
 			else:
