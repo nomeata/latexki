@@ -19,7 +19,7 @@ FILETYPES={
 }
 
 def main ():
-	global self_uri, repos, svn_path, filename
+	global self_uri, repos, filename
 
 	tmpdir = tempfile.mkdtemp('','latexki-cgi-')
 	os.chdir(tmpdir)
@@ -27,7 +27,6 @@ def main ():
 	try:
 		basename = os.environ.get('PATH_INFO','/')[1:]
 		repos    = os.environ.get('HTTP_LATEXKI_REPOS',None)
-		svn_path = os.environ.get('HTTP_LATEXKI_PATH',"/")
 		self_uri = os.environ.get('REQUEST_URI')
 		assert repos, "Need LATEXKI_REPOS environment variable"
 		
@@ -120,7 +119,7 @@ def prepare_svn():
 	global client
 	client = pysvn.Client()
 	zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
-	client.checkout(repos + svn_path,".",False,zero)
+	client.checkout(repos, '.',False,zero)
 
 def update(req_rev=None):
 	if req_rev:
@@ -151,7 +150,7 @@ def commit(log = 'No log message'):
 	
 
 def exists(basename):
-	files =  client.ls(repos+svn_path)
+	files =  client.ls(repos)
 	sr = (lambda str: os.path.basename(str))
 	matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
 	if len(matches) == 0:
