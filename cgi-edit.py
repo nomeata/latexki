@@ -94,7 +94,7 @@ def main ():
 			assert 'comment' in form, "Commit comment is compulsory"
 			log = form['comment']
 			new_content = form['content'].replace('\r\n','\n') # is this an HACK?
-			file(filename,'w').write(new_content.encode('utf8')
+			file(filename,'w').write(new_content.encode('utf8'))
 			if new:
 				add()
 				(error,new_rev) = commit(log.encode('utf8'))
@@ -105,7 +105,7 @@ def main ():
 					if 'checked_conflict' in form:
 						new_rev = update(form['conf_rev'])
 						assert conflict(), "This should be a conflict, strange..."
-						file(filename,'w').write(new_content)
+						file(filename,'w').write(new_content.encode('utf8'))
 						resolve()
 					else:
 						error = "Please do resolve your conflict"
@@ -114,14 +114,14 @@ def main ():
 				if conflict():
 					conf_rev = new_rev
 				else:
-					(error,new_rev) = commit(log)
+					(error,new_rev) = commit(log.encode('utf8'))
 					if not error:
 						done = True
 		
 		# do SVN stuff here
 
 		if filename:
-			content = file(filename,'r').read()
+			content = file(filename,'r').read().decode('utf8')
 		else:
 			content = 'Enter new page here'
 
