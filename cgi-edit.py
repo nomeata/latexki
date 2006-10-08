@@ -161,7 +161,7 @@ def resolve():
 
 def commit(log = u'No log message'):
 	who = os.environ.get('REMOTE_ADDR',u'unknown').decode('utf8')
-	msg = (u"%s, via wiki: %s" % (who,log)).encode('utf8') 
+	msg = (u"%s, via wiki: %s" % (who,log)) 
 	rev = client.checkin(filename, msg)
 	if rev:
 		# This looks so like "Either String Int" :-)
