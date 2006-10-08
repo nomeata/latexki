@@ -219,8 +219,10 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	</form>''' % { 'pageform':pageform, 'content': esc(content), 'self_uri':esc(self_uri),
 	               'conftext':conftext, 'rev':rev, 'comment':esc(log)}
 	print '''
+<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
 <html>
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <title>%(title)s</title>
 </head>
 <boddy>
