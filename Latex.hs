@@ -115,7 +115,7 @@ procTex tex wi = do
 	        	]
 			else []
 	
-	return $ replicate 3 (runit "pdflatex" [tex])  ++ pstqueue
+	return $ pstqueue ++ replicate 3 (runit "pdflatex" [tex])
 
 
 
