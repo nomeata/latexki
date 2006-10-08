@@ -25,7 +25,7 @@ FILETYPES={
 class Form(cgi.FieldStorage):
     def __getitem__(self,item):
 		encoding = self.getfirst('_charset_') or 'UTF-8'
-		return self.getfirst('item').decode(encoding)
+		return self.getfirst(item).decode(encoding)
 
     def getfirst(self, key, default=None):
         """ Return the first value received."""
