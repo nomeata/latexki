@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# coding: utf-8
 #
 # © 2006 Joachim Breitner
 #
@@ -21,6 +22,11 @@ FILETYPES={
 	'wiki-conf': 'Wiki Configuration File',
 }
 
+class Form(cgi.FieldStoare):
+	def __getitem__(self,item):
+		encoding = self.getfirst('_charset_') or 'UTF-8'
+		return self.getfirst('item').decode(encoding)
+
 def main ():
 	global self_uri, repos, filename
 
@@ -34,7 +40,7 @@ def main ():
 		assert repos, "Need LATEXKI_REPOS environment variable"
 		
 		prepare_svn()
-		form = cgi.FieldStorage()
+		form = Form()
 
 		error = None
 		old_rev = 0
@@ -43,14 +49,14 @@ def main ():
 		log = ''
 
 		if 'basename' in form:
-			basename = form.getfirst('basename')
+			basename = form['basename']
 			assert 'type' in form, "Extension choice forgotten"
-			ext = form.getfirst('type')
+			ext = form['type']
 			if   ext == "!wiki":
 				ext = None
 			elif ext == "!other":
 				assert 'ext' in form, "Extension entry forgotten"
-				ext = form.getfirst('ext')
+				ext = form['ext']
 			(new,old_ext) = exists(basename)
 			assert new or ext == old_ext, "File exists with different extension"
 		else:
@@ -69,14 +75,14 @@ def main ():
 
 		if not new:
 			if 'revision' in form:
-				old_rev = update(form.getfirst('revision'))
+				old_rev = update(form['revision'])
 			else:
 				old_rev = update()
 
 		if 'content' in form:
 			assert 'comment' in form, "Commit comment is compulsory"
-			log = form.getfirst('comment')
-			new_content = form.getfirst('content').replace('\r\n','\n') # is this an HACK?
+			log = form['comment']
+			new_content = form['content'].replace('\r\n','\n') # is this an HACK?
 			file(filename,'w').write(new_content)
 			if new:
 				add()
@@ -86,7 +92,7 @@ def main ():
 			else:
 				if 'conf_rev' in form:
 					if 'checked_conflict' in form:
-						new_rev = update(form.getfirst('conf_rev') )
+						new_rev = update(form['conf_rev'])
 						assert conflict(), "This should be a conflict, strange..."
 						file(filename,'w').write(new_content)
 						resolve()
@@ -216,6 +222,7 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	Please describe your changes. This is mandatory.<br/>
 	<input type="text" name="comment" size="80" value="%(comment)s"/>
 	<h3>Commit changes</h3>
+	<input type="hidden" name="_charset_"/>
 	%(conftext)s
 	<button type="submit">Commit changes
 	</button> (can take a while, please be patient)
