@@ -97,7 +97,7 @@ def main ():
 			file(filename,'w').write(new_content.encode('utf8'))
 			if new:
 				add()
-				(error,new_rev) = commit(log.encode('utf8'))
+				(error,new_rev) = commit(log)
 				if not error:
 					done = True
 			else:
@@ -114,7 +114,7 @@ def main ():
 				if conflict():
 					conf_rev = new_rev
 				else:
-					(error,new_rev) = commit(log.encode('utf8'))
+					(error,new_rev) = commit(log)
 					if not error:
 						done = True
 		
@@ -159,9 +159,9 @@ def conflict():
 def resolve():
 	client.resolved(filename)
 
-def commit(log = 'No log message'):
+def commit(log = u'No log message'):
 	who = os.environ.get('REMOTE_ADDR','unknown')
-	rev = client.checkin(filename, "%s, via wiki: %s" % (who,log) )
+	rev = client.checkin(filename, (u"%s, via wiki: %s" % (who,log)).encode('utf8') )
 	if rev:
 		# This looks so like "Either String Int" :-)
 		return (None, rev.number)
