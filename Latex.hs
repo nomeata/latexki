@@ -2,11 +2,12 @@ module Latex ( procTex, texDeps ) where
 
 import Maybe
 import Monad
-import Directory
+import System.Directory
 import System.Process
 import System.IO
 import System
 import Char
+import List
 import Common
 import HtmlStyle
 
@@ -16,6 +17,14 @@ replicateCmd n cmd = do
 	case res of
 		ExitSuccess  -> replicateCmd (n-1) cmd
 		otherwise    -> return res
+
+whileOk []     = return ExitSuccess
+whileOk (x:xs) = do
+	res <- x
+	case res of 
+		ExitSuccess -> whileOk xs
+		otherwise   -> return res
+		
 
 uncomment ""            = ""
 uncomment "\\"          = "\\"
@@ -30,6 +39,7 @@ findSimpleCommands ('\\':rest1) | n == '{'  = (command,param):findSimpleCommands
 	      (param,rest3)     = span (/='}')   rest2
 findSimpleCommands (_:rest)                 =                 findSimpleCommands rest	      
 
+
 depCmds = [("input",".tex"),("include",".tex"),("usepackage",".sty")]
 texDeps tex wi = do
 	file' <- readFile tex
@@ -38,9 +48,76 @@ texDeps tex wi = do
 	    candits = catMaybes $  map (\(c,f) -> case lookup c depCmds of 
 	  			        		Just ext -> Just $ f++ext
 							Nothing -> Nothing          ) commands
-	    files = map ((datadir++)) candits
-	existing <- filterM (doesFileExist) files
-	return (tex:existing)
+	    files = addpath candits
+	existing <- exist files
+	additional <- liftM (nub.sort) $ exist.concat =<< mapM (\d -> texDeps d wi) existing
+	return (tex:additional)
+ where  addpath = map (datadir++)
+        exist   = filterM doesFileExist . filter (/= tex)
+
+texInclCmds = ["input","include"]
+prepareStripped tex wi = do
+	file' <- readFile tex
+	let file = (unlines.(map uncomment).lines) file'
+	    commands = findSimpleCommands file
+	    candits = map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
+	file <- exist candits
+	mapM handle candits 
+	mapM (\t -> prepareStripped t wi) =<< exist (addpath candits)
+	return ()
+ where  addpath = map (datadir++)
+        exist   = filterM doesFileExist . filter (/= tex)
+	methods = [ (".part.tex", copy), (".tex",strip) ]
+	handle base = do methods' <- filterM (\(s,_) -> doesFileExist (datadir ++ base ++ s)) methods
+			 case methods' of
+		      	  []      -> return ()
+			  [(s,m)] -> m (datadir ++ base ++ s) (base ++ ".tex")
+	copy f t = copyFile f t
+	strip f t = (writeFile t). strip' =<< readFile f
+	 where 
+	 	strip' file = chaptertitle $ mainPart file 
+		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
+		 	chaptertitle = replace "\\maketitle" ("\\chapter{"++title++"}")
+		mainPart = unlines .  stail . takeWhile (not. subListOf "\\end{document}") . stail . dropWhile (not. subListOf "\\begin{document}") . lines
+	        stail [] = []
+	        stail l  = tail l
+	
+
+usesPST tex wi = do
+	file <- readFile tex
+	return $ ("usepackage", "pst-pdf")  `elem` (findSimpleCommands file)
+	
+
+procTex tex wi = do
+	err <- whileOk =<< runLatex
+	case err of
+		ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
+		ExitSuccess   -> putStr "ok"
+	genHTML tex wi err
+	return ()
+  where pdffile  = basename tex ++ ".pdf"
+  	removeFileIfExists file = do exists <- doesFileExist file ; if exists then removeFile file else return ()
+  	runLatex = do
+	prepareStripped tex wi
+
+	let env = [ ("TEXINPUTS",".:"++datadir++":") ] -- colon to append, not override, default
+	let runit c a = do
+  		readNull <- return.Just =<< openFile "/dev/null" ReadMode
+	  	writeNull <- return.Just =<< openFile "/dev/null" WriteMode
+		runProcess c a Nothing (Just env) readNull writeNull writeNull >>= waitForProcess
+	
+	usesPST' <- usesPST tex wi
+	let pstqueue = if usesPST'
+			then [
+				runit "latex" [tex],
+				runit "dvips" [ (basename tex ++ ".dvi") , "-o", (basename tex ++ "-pics.ps") ],
+				runit "ps2pdf" [ (basename tex ++ "-pics.ps") ]
+	        	]
+			else []
+	
+	return $ replicate 3 (runit "pdflatex" [tex])  ++ pstqueue
+
+
 
 genHTML tex wi err = do 
 	writeFile target $ htmlPage wi tex (basename tex) $ title ++ content
@@ -56,17 +133,5 @@ genHTML tex wi err = do
 	pdfFile = (basename tex) ++ ".pdf"				      
 	logFile = (basename tex) ++ ".log" 
 	target  = (basename tex) ++ ".html" 
-
-
-procTex tex wi = do
-	err <- replicateCmd 3 runLatex
-	putStrLn $ "Result: "++(show err)
-	genHTML tex wi err
-	return ()
-  where runLatex = do
-  	readNull <- return.Just =<< openFile "/dev/null" ReadMode
-  	writeNull <- return.Just =<< openFile "/dev/null" WriteMode
-  	runProcess "pdflatex" [tex] Nothing Nothing readNull writeNull writeNull >>=
-		waitForProcess
 
 

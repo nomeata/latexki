@@ -69,26 +69,26 @@ readConfig = do
 		
 
 main = do
-  [repos,outdir] <- getArgs
-
+  (opts, [repos, outdir]) <- partition ("-" `isPrefixOf`) `liftM` getArgs
   exists <- doesDirectoryExist outdir
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
   setCurrentDirectory outdir
   exported <- doesDirectoryExist (datadir++".svn")
   if exported then
-  	system ("(cd "++datadir++"; svn update)")
-    else 
-  	system ("svn checkout "++repos++" "++datadir)
+  	if "-n" `notElem` opts then
+	  	system ("(cd "++datadir++"; svn update)")
+	 else	return ExitSuccess
+   else system ("svn checkout "++repos++" "++datadir)
 
-  inputfiles <- directoryFiles datadir
+  inputfiles <- (filter (not.null.basename) . sort) `liftM` directoryFiles datadir
 
   putStr "Reading Configuration..."
   config <- readConfig
   putStrLn "done."
 
   putStr "Generating Sitemap..."
-  (sm, todo'') <- return.unzip =<< mapM actions inputfiles  
-  putStrLn $ (show $ length sm )++" base files."
+  (sm, todo'') <- unzip `liftM` mapM actions inputfiles
+  putStrLn $ (show $ length sm) ++ " base files."
   
   let wi = WikiInfo { sitemap = sm , wikiConfig = config}
 
@@ -100,15 +100,17 @@ main = do
   todo <- filterM (\((_,t),d) -> anyM2 needsUpdate t d) todo' >>= return.(map fst)
   putStrLn $ (show $ length todo)++" left to do."
 
-  putStrLn "Generating files..."
-  mapM_ (\(a,f) -> putStrLn ((concat(intersperse ", " f))++"...") >> a wi) todo
+  putStrLn "Generating files... "
+  mapM_ (\(a,f) -> putStr ((concat(intersperse ", " f))++"...") >> a wi >> putStrLn ".") todo
   putStrLn "Done."
 
   putStrLn "Cleaning up..."
   foundOutputs <- directoryFiles "./"
   let expectedOutputs = outputs wi
       delete = filter (`notElem` expectedOutputs) $ map filename foundOutputs
-  mapM_ (\f -> putStrLn ("Deleting "++f)  >> removeFile f) delete
+  putStr $ "Deleting "++(show (length delete) ) ++ " old or temporary files.. "
+  --mapM_ (\f -> putStrLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
+  mapM_ removeFile delete
   putStrLn "Done."
 
 

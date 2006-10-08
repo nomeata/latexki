@@ -18,10 +18,14 @@ module Common (
 	basename,
 	splitFilePath,
 	filename,
+
+	replace,
+	subListOf,
 ) where
 
 import qualified FilePath as FP
 import Maybe
+import List
 
 -- Data type
 
@@ -39,8 +43,23 @@ datadir = "./data/"
 
 basename = triple2.splitFilePath
 filename = snd.FP.splitFileName 
-splitFilePath = FP.splitFilePath
+splitFilePath :: FilePath -> (String, String, String)
+splitFilePath path = case break (== '.') basename of
+    (name, "")      -> (dir, name, "")
+    (name, _:ext) -> (dir, name, ext)
+  where
+    (dir, basename) = FP.splitFileName path
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x
 triple3 (_,_,x) = x
+		
+replace what with l = replace' l
+ where 	replace' []   = []
+	replace' text = if what `isPrefixOf` text then with ++ (replace' (drop (length what) text) )
+						  else head text : replace' (tail text)
+
+subListOf []   _   = True
+subListOf what l = contains' l
+ where 	contains' []   = False
+	contains' text = what `isPrefixOf` text || contains' (tail text)
