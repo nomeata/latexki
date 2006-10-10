@@ -14,15 +14,18 @@ htmlPage wi title basename body =
   )++(
   	tag "body" ((
 		tagP "div" [("class","menu")] ( tag "ul" (
-			concatMap li [	("Start page", "./"),
-					("Edit this", "./cgi/edit/"++basename),
-					("Create new page","./cgi/edit" )]	
+			concatMap li ([	("Start page", "./") ] ++
+					addmenu                ++
+				      [ ("Edit this", "./cgi/edit/"++basename),
+					("Create new page","./cgi/edit" )])
 		))
 	)++(
 		tagP "div" [("class","content")] body
 	))
   )))
 	where li (t,l) = tag "li" $ aHref l $ t
+	      addmenuconf = fromMaybe "" . lookup "addmenu" . wikiConfig  $ wi
+	      addmenu =  map (\f -> (f,"./"++f++".html") ) $ words addmenuconf
 
 tagP name params body | null body = "<"++name++par++"/>"
                       | otherwise = "<"++name++par++">"++body++"</"++name++">"
