@@ -1,4 +1,6 @@
 module Common (
+	Dependency(FileDep,FileList,RepositoryChanges),
+
 	FileProcessor,
 	DepCalculator,
 
@@ -27,11 +29,14 @@ import qualified FilePath as FP
 import Maybe
 import List
 
--- Data type
+
+-- Dependency Datatype
+data Dependency = FileDep FilePath | FileList | RepositoryChanges
 
 type FileProcessor = FilePath -> WikiInfo -> IO ()
-type DepCalculator = FilePath -> WikiInfo -> IO [FilePath]
+type DepCalculator = FilePath -> WikiInfo -> IO [Dependency]
 
+-- Data type
 data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , wikiConfig :: [(String,String)] }
 mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
 

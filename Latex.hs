@@ -41,7 +41,8 @@ findSimpleCommands (_:rest)                 =                 findSimpleCommands
 
 
 depCmds = [("input",".tex"),("include",".tex"),("usepackage",".sty")]
-texDeps tex wi = do
+texDeps tex wi = liftM (map FileDep) $ texDeps' tex wi
+texDeps' tex wi = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	    commands = findSimpleCommands file
@@ -50,7 +51,7 @@ texDeps tex wi = do
 							Nothing -> Nothing          ) commands
 	    files = addpath candits
 	existing <- exist files
-	additional <- liftM (nub.sort) $ exist.concat =<< mapM (\d -> texDeps d wi) existing
+	additional <- liftM (nub.sort) $ exist.concat =<< mapM (\d -> texDeps' d wi) existing
 	return (tex:additional)
  where  addpath = map (datadir++)
         exist   = filterM doesFileExist . filter (/= tex)

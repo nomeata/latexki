@@ -26,7 +26,8 @@ pipes _       = (["html"], procGeneric )
 deps :: String -> DepCalculator
 deps "tex"    = texDeps 
 deps "latex"  = deps "tex"
-deps _        = \file -> const (return [file])
+deps ""       = wikiDeps
+deps _        = const . return . (:[]) . FileDep
 
 actions file = do 
 	let  (dir, basename, ext) = splitFilePath file
@@ -38,11 +39,18 @@ actions file = do
         return $ (sitemapEntry, (act, myDeps))
 
 -- file1 depends upon file2
-needsUpdate file1 file2 = do 
-	putStrLn $ "  "++file1++" depends on "++file2
+-- Todo, only when new files are there. Probably hard
+needsUpdate file1 FileList          = do
+	putStrLn $ "  "++file1++" updated because of possible new files"
+	return True 
+needsUpdate file1 RepositoryChanges = do
+	putStrLn $ "  "++file1++" updated because of Repositorychanges"
+	return True 
+needsUpdate file1 (FileDep file2)   = do 
 	ex <- doesFileExist file1
 	ex2 <- doesFileExist file2
-	if not ex2 then do
+	needs_update <-
+	  if not ex2 then do
 		putStrLn $ "WARNING: Dependency "++file2++" does not exist"
 		return False
 	  else if ex then do
@@ -50,6 +58,8 @@ needsUpdate file1 file2 = do
 		date2 <- getModificationTime file2
 		return $ date1 < date2
 	    else return True
+	when needs_update $ putStrLn $ "  "++file1++" update because of "++file2
+	return needs_update
 
 anyM  cond list = mapM cond list >>= return.or
 anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >>= return.or

@@ -1,16 +1,26 @@
-module Wiki (procWiki) where
+module Wiki (wikiDeps, procWiki) where
 
 import FilePath
 import List
 import Char
+import Maybe
+
 import Common
 import HtmlStyle
+
+wikiDeps wiki wi = do
+	content <- readFile wiki
+	let lc = map toLower content
+	let sitemap = if "##sitemap##"       `subListOf` lc then Just FileList          else Nothing
+	let repch   = if "##recentchanges##" `subListOf` lc then Just RepositoryChanges else Nothing
+	return $ catMaybes [sitemap,repch]
 
 procWiki wiki wi = do
 	content <- readFile wiki
 	let formatted = links wi $ unlines $ lineBased wi $ lines $ escape content
 	    target    = (basename wiki) ++ ".html"
 	writeFile target $ htmlPage wi (basename wiki) (basename wiki) formatted 
+	putStr "ok"
 
 lineBased wi = prefo.paras.lists.(map headers).(specials wi).(map stripWhitespace)
 
