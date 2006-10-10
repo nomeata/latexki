@@ -16,13 +16,23 @@ updateSVN repos = system ("(cd "++datadir++"; svn update)") >> return ()
 
 coSVN repos = system ("svn checkout "++repos++" "++datadir) >> return ()
 
+getCurrentRev repos = do
+	let options = ["info","--xml", datadir]
+	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
+	hClose inp
+	xml <- hGetContents out
+	waitForProcess pid
+	let (Document _ _ info _)= xmlParse "svn info" xml
+	return $ read $ verbatim $ find "revision" literal `o` tagWith (=="entry") `o` children $ CElem info
+
+
 getSVNRecentChanges repos = do 
 	let options = ["log","--xml","--limit","10","--verbose",datadir]
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
 	xml <- hGetContents out
 	waitForProcess pid
-	let doc= xmlParse "/dev/null" xml
+	let doc= xmlParse "svn log" xml
 	return $ toLogEntries doc
 
 toLogEntries (Document _ _ logs _ ) = map toLogEntry $ elm `o` children $ CElem logs
