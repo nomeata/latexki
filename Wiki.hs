@@ -79,9 +79,21 @@ specials wi  (line:r) | "##" `encloses` line = (case map toLower $ takeout "##" 
 				  		"hello"   -> ["Hello World"]
 						-- The next line is cool.
 						"sitemap" -> map ("* ["\/"]") $ sort $ basenames wi
+						"recentchanges" -> formatRC (recentChanges wi)
 						huh       -> ["Unknown Command \""++huh++"\""] 
 				           ) ++ specials wi r
 	 	      | otherwise            = line : specials wi r
+
+formatRC = tagL "ol" . map formatChange
+  where	formatChange entry = tag "li" $ 
+  		"Revision : "++(show (revision entry)) ++"<br/>" ++
+  		"Author   : "++(      author   entry ) ++"<br/>" ++
+  		"Date     : "++(      date   entry ) ++"<br/>"++
+  		"Message  : "++(tag "p" $ message entry ) ++
+  		"Changed Files: "++(tag "ul" $ concatMap (
+				tag "li" . ("["\/"]"). basename
+			) (paths entry) ) 
+
 
 encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
 takeout  sub    = (drop (length sub)).reverse.(drop (length sub)).reverse

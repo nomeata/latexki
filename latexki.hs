@@ -13,6 +13,7 @@ import Common
 import Wiki
 import Latex
 import Generic
+import SVN
 
 directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
 
@@ -84,11 +85,9 @@ main = do
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
   setCurrentDirectory outdir
   exported <- doesDirectoryExist (datadir++".svn")
-  if exported then
-  	if "-n" `notElem` opts then
-	  	system ("(cd "++datadir++"; svn update)")
-	 else	return ExitSuccess
-   else system ("svn checkout "++repos++" "++datadir)
+  if exported then if "-n" `notElem` opts then updateSVN repos
+	                                  else return ()
+              else                             coSVN repos
 
   inputfiles <- (filter (not.null.basename) . sort) `liftM` directoryFiles datadir
 
@@ -99,8 +98,12 @@ main = do
   putStr "Generating Sitemap..."
   (sm, todo'') <- unzip `liftM` mapM actions inputfiles
   putStrLn $ (show $ length sm) ++ " base files."
+
+  putStr "Generating Recent Changes.."
+  rc <- getSVNRecentChanges repos
+  putStrLn "Done."
   
-  let wi = WikiInfo { sitemap = sm , wikiConfig = config}
+  let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc}
 
   putStr "Getting Dependencies..."
   todo' <- mapM ( \(act,dep) -> dep wi >>= return.((,) act) ) todo'' 

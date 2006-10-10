@@ -4,12 +4,21 @@ module Common (
 	FileProcessor,
 	DepCalculator,
 
+	RecentChanges,
+	LogEntry(LogEntry),
+	revision,
+	author,
+	date,
+	paths,
+	message,
+
 	WikiInfo(WikiInfo),
 	sitemap,
 	wikiConfig,
 	mainTitle,
 	basenames,
 	outputs,
+	recentChanges,
 
 	datadir,
 
@@ -29,15 +38,18 @@ import qualified FilePath as FP
 import Maybe
 import List
 
-
 -- Dependency Datatype
 data Dependency = FileDep FilePath | FileList | RepositoryChanges
 
 type FileProcessor = FilePath -> WikiInfo -> IO ()
 type DepCalculator = FilePath -> WikiInfo -> IO [Dependency]
 
+type RecentChanges = [LogEntry]
+
+data LogEntry = LogEntry { revision :: Int, author :: String, date :: String, paths :: [FilePath], message :: String } deriving (Show)
+
 -- Data type
-data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , wikiConfig :: [(String,String)] }
+data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , wikiConfig :: [(String,String)], recentChanges :: RecentChanges }
 mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
 
 basenames wi = map triple1 (sitemap wi)
