@@ -48,7 +48,7 @@ def main ():
 		basename = os.environ.get('PATH_INFO','/')[1:]
 		repos    = os.environ.get('HTTP_LATEXKI_REPOS',None)
 		self_uri = os.environ.get('REQUEST_URI')
-		who = os.environ.get('REMOTE_ADDR',u'unknown').decode('utf8')
+		who = os.environ.get('REMOTE_ADDR','unknown').decode('utf8')
 		assert repos, "Need LATEXKI_REPOS environment variable"
 		
 		prepare_svn()
