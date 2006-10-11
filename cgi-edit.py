@@ -39,7 +39,7 @@ class Form(cgi.FieldStorage):
             return default
 
 def main ():
-	global self_uri, repos, filename
+	global self_uri, repos, filename, who
 
 	tmpdir = tempfile.mkdtemp('','latexki-cgi-')
 	os.chdir(tmpdir)
@@ -48,6 +48,7 @@ def main ():
 		basename = os.environ.get('PATH_INFO','/')[1:]
 		repos    = os.environ.get('HTTP_LATEXKI_REPOS',None)
 		self_uri = os.environ.get('REQUEST_URI')
+		who = os.environ.get('REMOTE_ADDR',u'unknown').decode('utf8')
 		assert repos, "Need LATEXKI_REPOS environment variable"
 		
 		prepare_svn()
@@ -160,7 +161,6 @@ def resolve():
 	client.resolved(filename)
 
 def commit(log = u'No log message'):
-	who = os.environ.get('REMOTE_ADDR',u'unknown').decode('utf8')
 	msg = (u"%s, via wiki: %s" % (who,log)) 
 	rev = client.checkin(filename, msg)
 	if rev:
