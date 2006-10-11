@@ -49,7 +49,7 @@ def main ():
 		repos    = os.environ.get('HTTP_LATEXKI_REPOS',None)
 		self_uri = os.environ.get('REQUEST_URI')
 		who = os.environ.get('REMOTE_ADDR','unknown').decode('utf8')
-		assert repos, "Need LATEXKI_REPOS environment variable"
+		assert repos, "Need HTTP_LATEXKI_REPOS environment variable"
 		
 		prepare_svn()
 		form = Form()
