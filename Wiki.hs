@@ -13,7 +13,7 @@ wikiDeps wiki wi = do
 	let lc = map toLower content
 	let sitemap = if "##sitemap##"       `subListOf` lc then Just FileList          else Nothing
 	let repch   = if "##recentchanges##" `subListOf` lc then Just RepositoryChanges else Nothing
-	return $ catMaybes [sitemap,repch]
+	return $ FileDep wiki : catMaybes [sitemap,repch]
 
 procWiki wiki wi = do
 	content <- readFile wiki

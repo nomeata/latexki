@@ -139,6 +139,7 @@ def main ():
 def prepare_svn():
 	global client
 	client = pysvn.Client()
+	client.set_default_username((who + u' via svn').encode('utf8'))
 	zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
 	client.checkout(repos, '.',False,zero)
 
@@ -148,8 +149,9 @@ def update(req_rev=None):
 	else:
 		rev = pysvn.Revision( pysvn.opt_revision_kind.head )
 	
-	rev = client.update(filename,False,rev)
-	return rev.number
+	rev_list = client.update(filename,False,rev)
+	assert len(rev_list) == 1
+	return rev_list[0].number
 
 def add():
 	client.add(filename)
@@ -161,7 +163,7 @@ def resolve():
 	client.resolved(filename)
 
 def commit(log = u'No log message'):
-	msg = (u"%s, via wiki: %s" % (who,log)) 
+	msg = log
 	rev = client.checkin(filename, msg)
 	if rev:
 		# This looks so like "Either String Int" :-)
