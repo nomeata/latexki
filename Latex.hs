@@ -104,8 +104,8 @@ procTex tex wi = do
 	let env = [ ("TEXINPUTS",".:"++datadir++":") ] -- colon to append, not override, default
 	let runit c a = do
   		readNull <- return.Just =<< openFile "/dev/null" ReadMode
-	  	writeNull <- return.Just =<< openFile "/dev/null" WriteMode
-		runProcess c a Nothing (Just env) readNull writeNull writeNull >>= waitForProcess
+	  	writeLog <- return.Just =<< openFile (basename tex ++ ".output") WriteMode
+		runProcess c a Nothing (Just env) readNull writeLog writeLog >>= waitForProcess
 	
 	usesPST' <- usesPST tex wi
 	let pstqueue = if usesPST'
