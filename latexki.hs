@@ -120,7 +120,10 @@ main = do
   putStrLn "Cleaning up..."
   foundOutputs <- directoryFiles "./"
   let expectedOutputs = outputs wi
-      delete = filter (`notElem` expectedOutputs) $ map filename foundOutputs
+      systemFiles = ["latexki-run.log"]
+      delete = filter (`notElem` expectedOutputs) $
+      		filter (`notElem` systemFiles) $
+      		map filename foundOutputs
   putStr $ "Deleting "++(show (length delete) ) ++ " old or temporary files.. "
   --mapM_ (\f -> putStrLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
   mapM_ removeFile delete
