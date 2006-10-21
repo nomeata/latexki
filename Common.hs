@@ -33,13 +33,19 @@ module Common (
 	splitFilePath,
 	filename,
 
+	directoryFiles,
+	recursiveFiles,
+
 	replace,
 	subListOf,
 ) where
 
 import qualified FilePath as FP
 import Maybe
+import Monad
 import List
+
+import Directory
 
 -- Dependency Datatype
 data Dependency = FileDep FilePath | FileList | RepositoryChanges
@@ -89,3 +95,14 @@ subListOf []   _   = True
 subListOf what l = contains' l
  where 	contains' []   = False
 	contains' text = what `isPrefixOf` text || contains' (tail text)
+
+directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
+
+recursiveFiles :: FilePath -> IO [FilePath]
+recursiveFiles dir' = do
+	let dir = if last dir' == '/' then dir' else dir'++"/"
+	entries <- getDirectoryContents dir
+	let paths = map (dir++) entries
+	files  <- filterM doesFileExist paths
+	recurs <- liftM concat $ mapM recursiveFiles =<< liftM (filter (not.null.basename)) (filterM doesDirectoryExist paths)
+	return $ files ++ recurs

@@ -16,8 +16,6 @@ import Latex
 import Generic
 import SVN
 
-directoryFiles dir = getDirectoryContents dir >>= return.(map (dir++)) >>= filterM (doesFileExist)
-
 pipes :: String -> ( [String], FileProcessor )
 pipes "tex"   = (["html","pdf","log","output"],  procTex  )
 pipes "latex" = pipes "tex"
