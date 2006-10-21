@@ -56,6 +56,7 @@ texDeps' tex wi = do
  where  addpath = map (datadir++)
         exist   = filterM doesFileExist . filter (/= tex)
 
+-- Needs directory support!
 texInclCmds = ["input","include"]
 prepareStripped tex wi = do
 	file' <- readFile tex
@@ -90,33 +91,40 @@ usesPST tex wi = do
 	
 
 procTex tex wi = do
+	cwd <- getCurrentDirectory
+	safeChdir (dirname $ basename tex)
+	putStrLn . ( "In dir "++) =<< getCurrentDirectory
 	err <- whileOk =<< runLatex
 	case err of
 		ExitFailure _ -> debug wi (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
 		ExitSuccess   -> debug wi "ok"
+	setCurrentDirectory cwd
+	putStrLn . ( "In dir "++) =<< getCurrentDirectory
 	genHTML tex wi err
 	return ()
-  where pdffile  = basename tex ++ ".pdf"
+  where realsource = concat (replicate (length $ filter (=='/') $ basename tex) "../") ++ tex
+  	realbasename = filename $ basename tex
+  	pdffile  = basename tex ++ ".pdf"
   	removeFileIfExists file = do exists <- doesFileExist file ; if exists then removeFile file else return ()
   	runLatex = do
-	prepareStripped tex wi
+	prepareStripped realsource wi
 
-	let env = [ ("TEXINPUTS",".:"++datadir++":") ] -- colon to append, not override, default
+	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail tex)) ] -- colon to append, not override, default
 	let runit c a = do
   		readNull <- return.Just =<< openFile "/dev/null" ReadMode
-	  	writeLog <- return.Just =<< openFile (basename tex ++ ".output") WriteMode
+	  	writeLog <- return.Just =<< openFile (realbasename  ++ ".output") WriteMode
 		runProcess c a Nothing (Just env) readNull writeLog writeLog >>= waitForProcess
 	
-	usesPST' <- usesPST tex wi
+	usesPST' <- usesPST realsource wi
 	let pstqueue = if usesPST'
 			then [
-				runit "latex" [tex],
-				runit "dvips" [ (basename tex ++ ".dvi") , "-o", (basename tex ++ "-pics.ps") ],
-				runit "ps2pdf" [ (basename tex ++ "-pics.ps") ]
+				runit "latex" [ realsource ],
+				runit "dvips" [ (realbasename ++ ".dvi") , "-o", (realbasename ++ "-pics.ps") ],
+				runit "ps2pdf" [ (realbasename ++ "-pics.ps") ]
 	        	]
 			else []
 	
-	return $ pstqueue ++ replicate 3 (runit "/usr/bin/pdflatex" [tex])
+	return $ pstqueue ++ replicate 3 (runit "/usr/bin/pdflatex" [realsource])
 
 
 

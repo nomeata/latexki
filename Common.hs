@@ -31,7 +31,11 @@ module Common (
 
 	basename,
 	splitFilePath,
+	splitWikiPath,
+	dirTrail,
 	filename,
+	dirname,
+	safeChdir,
 
 	directoryFiles,
 	recursiveFiles,
@@ -45,7 +49,7 @@ import Maybe
 import Monad
 import List
 
-import Directory
+import System.Directory
 
 -- Dependency Datatype
 data Dependency = FileDep FilePath | FileList | RepositoryChanges
@@ -70,17 +74,36 @@ basenames wi = map triple1 (sitemap wi)
 
 outputs wi = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) (sitemap wi)
 
-logfilename = "latexki-run.log"
+logfilename = "./latexki-run.log"
 datadir     = "./data/"
 
-basename = triple2.splitFilePath
+safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
+
+basename = removeExt . fst . splitWikiPath
 filename = snd.FP.splitFileName 
+dirname  = fst.FP.splitFileName
+
+removeExt = takeWhile (/='.')
+
+splitWikiPath :: FilePath -> (String, String)
+splitWikiPath path' = case break (== '.') path of
+    (name, "")    -> (name, "")
+    (name, _:ext) -> (name, ext)
+  where	path | datadir `isPrefixOf` path' = drop (length datadir) path'
+             | otherwise                  = path'
+
 splitFilePath :: FilePath -> (String, String, String)
 splitFilePath path = case break (== '.') basename of
     (name, "")      -> (dir, name, "")
     (name, _:ext) -> (dir, name, ext)
   where
     (dir, basename) = FP.splitFileName path
+
+dirTrail :: FilePath -> [FilePath]
+dirTrail = map reverse . dirTrail' . reverse
+dirTrail' "" = []
+dirTrail' ('/':dir) = dir : dirTrail' dir
+dirTrail' path = dirTrail' $ dropWhile (/='/')  path
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x
@@ -102,7 +125,7 @@ recursiveFiles :: FilePath -> IO [FilePath]
 recursiveFiles dir' = do
 	let dir = if last dir' == '/' then dir' else dir'++"/"
 	entries <- getDirectoryContents dir
-	let paths = map (dir++) entries
+	let paths = map (dir++) $ filter ( (/='.').head ) entries
 	files  <- filterM doesFileExist paths
-	recurs <- liftM concat $ mapM recursiveFiles =<< liftM (filter (not.null.basename)) (filterM doesDirectoryExist paths)
+	recurs <- liftM concat $ mapM recursiveFiles =<< filterM doesDirectoryExist paths
 	return $ files ++ recurs

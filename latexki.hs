@@ -30,7 +30,7 @@ deps ""       = wikiDeps
 deps _        = const . return . (:[]) . FileDep
 
 actions file = do 
-	let  (dir, basename, ext) = splitFilePath file
+	let  (basename, ext) = splitWikiPath file
 	     withExt e       = basename++"."++e
 	     (exts, action)  = pipes ext
 	     act             = (action file, map withExt exts)
@@ -95,7 +95,8 @@ main = do
 	                                  else return ()
               else                             coSVN repos
 
-  inputfiles <- (filter (not.null.basename) . sort) `liftM` directoryFiles datadir
+  inputfiles <- sort `liftM` recursiveFiles datadir
+  --inputfiles <- (filter (not.null.basename) . sort) `liftM` recursiveFiles datadir
 
   debug "Reading Configuration..."
   config <- readConfig
@@ -124,15 +125,16 @@ main = do
   debugLn "Done."
 
   debugLn "Cleaning up..."
-  foundOutputs <- directoryFiles "./"
-  let expectedOutputs = outputs wi
-      systemFiles = [filename logfilename]
+  foundOutputs <- recursiveFiles "./"
+  let expectedOutputs = map ("./"++) $ outputs wi
+      systemFiles = [logfilename]
       delete = filter (`notElem` expectedOutputs) $
       		filter (`notElem` systemFiles) $
-      		map filename foundOutputs
+		filter (not . isPrefixOf datadir ) $
+      		foundOutputs
   debug $ "Deleting "++(show (length delete) ) ++ " old or temporary files.. "
-  --mapM_ (\f -> debugLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
-  mapM_ removeFile delete
+  mapM_ (\f -> debugLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
+  --mapM_ removeFile delete
   debugLn "Done."
   hClose logfile
 
