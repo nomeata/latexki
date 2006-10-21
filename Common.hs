@@ -15,11 +15,14 @@ module Common (
 	WikiInfo(WikiInfo),
 	sitemap,
 	wikiConfig,
+	debug,
+	debugLn,
 	mainTitle,
 	basenames,
 	outputs,
 	recentChanges,
 
+	logfilename,
 	datadir,
 
 	triple1,
@@ -49,14 +52,20 @@ type RecentChanges = [LogEntry]
 data LogEntry = LogEntry { revision :: Int, author :: String, date :: String, paths :: [FilePath], message :: String } deriving (Show)
 
 -- Data type
-data WikiInfo = WikiInfo { sitemap :: [(String, String, [String]) ] , wikiConfig :: [(String,String)], recentChanges :: RecentChanges }
+data WikiInfo = WikiInfo {	sitemap :: [(String, String, [String]) ],
+				wikiConfig :: [(String,String)],
+				recentChanges :: RecentChanges,
+				debug :: String -> IO (),
+				debugLn :: String -> IO ()
+			}
 mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
 
 basenames wi = map triple1 (sitemap wi)
 
 outputs wi = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) (sitemap wi)
 
-datadir = "./data/"
+logfilename = "latexki-run.log"
+datadir     = "./data/"
 
 basename = triple2.splitFilePath
 filename = snd.FP.splitFileName 

@@ -92,8 +92,8 @@ usesPST tex wi = do
 procTex tex wi = do
 	err <- whileOk =<< runLatex
 	case err of
-		ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
-		ExitSuccess   -> putStr "ok"
+		ExitFailure _ -> debug wi (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
+		ExitSuccess   -> debug wi "ok"
 	genHTML tex wi err
 	return ()
   where pdffile  = basename tex ++ ".pdf"
