@@ -9,6 +9,7 @@ import Text.XML.HaXml.Combinators
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Verbatim
 
+data ChangedPath = Added file | Deleted file | Modified file | Other file
 
 import Common
 
@@ -31,7 +32,8 @@ getSVNRecentChanges repos = do
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
 	xml <- hGetContents out
-	waitForProcess pid
+	--no deadlock please
+	--waitForProcess pid
 	let doc= xmlParse "svn log" xml
 	return $ toLogEntries doc
 
