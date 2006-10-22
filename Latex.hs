@@ -33,49 +33,55 @@ uncomment ('%':_)       = ""
 uncomment (c:line)      = c:uncomment line
 	
 findSimpleCommands ""                       = []
-findSimpleCommands ('\\':rest1) | n == '{'  = (command,param):findSimpleCommands rest3
-                                | otherwise =                 findSimpleCommands (n:rest2)
+findSimpleCommands ('\\':rest1) | n == '{'             = (command,param) :findSimpleCommands rest3
+				| n == '[' && m == '{' = (command,param2):findSimpleCommands rest4
+                                | otherwise            =                  findSimpleCommands (n:rest2)
 	where (command,n:rest2) = span (isAlpha) rest1
 	      (param,rest3)     = span (/='}')   rest2
+	      (_,_:m:rest3')    = span (/=']')   rest2
+	      (param2,rest4)    = span (/='}')   rest3'
 findSimpleCommands (_:rest)                 =                 findSimpleCommands rest	      
 
 
-depCmds = [("input",".tex"),("include",".tex"),("usepackage",".sty")]
+depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
+		("usepackage",[".sty"]), ("includegraphics",["",".png"] ) ]
 texDeps tex wi = liftM (map FileDep) $ texDeps' tex wi
 texDeps' tex wi = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	    commands = findSimpleCommands file
 	    candits = catMaybes $  map (\(c,f) -> case lookup c depCmds of 
-	  			        		Just ext -> Just $ f++ext
+	  			        		Just exts -> Just $ (f,exts)
 							Nothing -> Nothing          ) commands
-	    files = addpath candits
-	existing <- exist files
-	additional <- liftM (nub.sort) $ exist.concat =<< mapM (\d -> texDeps' d wi) existing
+	files <- liftM (filter (/=tex).catMaybes) $ mapM find candits
+	additional <- liftM (nub.sort.concat) $ mapM (\d -> texDeps' d wi) files
 	return (tex:additional)
- where  addpath = map (datadir++)
-        exist   = filterM doesFileExist . filter (/= tex)
+ where  addpath = map ((dirname tex++"/") ++ )
+	find (candit,exts) = liftM listToMaybe $ filterM (doesFileExist) [ 
+			dir ++ "/" ++ candit ++ ext |
+				dir <- dirTrail tex,
+				ext <- exts
+			]
 
--- Needs directory support!
 texInclCmds = ["input","include"]
 prepareStripped tex wi = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	    commands = findSimpleCommands file
 	    candits = map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
-	file <- exist candits
-	mapM handle candits 
-	mapM (\t -> prepareStripped t wi) =<< exist (addpath candits)
+	files <- liftM catMaybes $ mapM find candits
+	sequence (map snd files)
+	mapM (\(f,_) -> prepareStripped f wi) files
 	return ()
  where  addpath = map (datadir++)
-        exist   = filterM doesFileExist . filter (/= tex)
+	find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
+			(dir ++ "/" ++ candit ++ suf, m (dir ++ "/" ++ candit ++ suf) (candit ++ ".tex")) |
+				dir <- dirTrail tex,
+				(suf,m) <- methods
+			]
 	methods = [ (".part.tex", copy), (".tex",strip) ]
-	handle base = do methods' <- filterM (\(s,_) -> doesFileExist (datadir ++ base ++ s)) methods
-			 case methods' of
-		      	  []      -> return ()
-			  [(s,m)] -> m (datadir ++ base ++ s) (base ++ ".tex")
-	copy f t = copyFile f t
-	strip f t = (writeFile t). strip' =<< readFile f
+	copy f t =  debugLn wi ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
+	strip f t = debugLn wi ("stripping " ++ f ++ " to " ++ t) >> ((writeFile t). strip' =<< readFile f)
 	 where 
 	 	strip' file = chaptertitle $ mainPart file 
 		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
@@ -93,23 +99,22 @@ usesPST tex wi = do
 procTex tex wi = do
 	cwd <- getCurrentDirectory
 	safeChdir (dirname $ pagename tex)
-	putStrLn . ( "In dir "++) =<< getCurrentDirectory
 	err <- whileOk =<< runLatex
+	setCurrentDirectory cwd
 	case err of
 		ExitFailure _ -> debug wi (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
 		ExitSuccess   -> debug wi "ok"
-	setCurrentDirectory cwd
-	putStrLn . ( "In dir "++) =<< getCurrentDirectory
 	genHTML tex wi err
 	return ()
-  where realsource = concat (replicate (length $ filter (=='/') $ pagename tex) "../") ++ tex
+  where realsource = backDir (pagename tex) ++ tex
   	realbasename = filename $ pagename tex
   	pdffile  = pagename tex ++ ".pdf"
   	removeFileIfExists file = do exists <- doesFileExist file ; if exists then removeFile file else return ()
   	runLatex = do
 	prepareStripped realsource wi
 
-	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail tex)) ] -- colon to append, not override, default
+	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
+	print env
 	let runit c a = do
   		readNull <- return.Just =<< openFile "/dev/null" ReadMode
 	  	writeLog <- return.Just =<< openFile (realbasename  ++ ".output") WriteMode

@@ -33,6 +33,7 @@ module Common (
 	splitFilePath,
 	splitWikiPath,
 	dirTrail,
+	backDir,
 	filename,
 	dirname,
 	safeChdir,
@@ -108,6 +109,8 @@ dirTrail = map reverse . dirTrail' . reverse
 dirTrail' "" = []
 dirTrail' ('/':dir) = dir : dirTrail' dir
 dirTrail' path = dirTrail' $ dropWhile (/='/')  path
+
+backDir path =  concat $ replicate (length $ filter (=='/') path) "../"
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x
