@@ -91,8 +91,7 @@ splitWikiPath :: FilePath -> (PageName, String)
 splitWikiPath path' = case break (== '.') path of
     (name, "")    -> (name, "")
     (name, _:ext) -> (name, ext)
-  where	path | datadir `isPrefixOf` path' = drop (length datadir) path'
-             | otherwise                  = path'
+  where	path = stripPrefix "/" $ stripPrefix datadir path'
 
 splitFilePath :: FilePath -> (String, String, String)
 splitFilePath path = case break (== '.') basename of
@@ -100,6 +99,9 @@ splitFilePath path = case break (== '.') basename of
     (name, _:ext) -> (dir, name, ext)
   where
     (dir, basename) = FP.splitFileName path
+
+stripPrefix pre str | pre `isPrefixOf` str = drop (length pre) str
+                    | otherwise            = str
 
 dirTrail :: FilePath -> [FilePath]
 dirTrail = map reverse . dirTrail' . reverse

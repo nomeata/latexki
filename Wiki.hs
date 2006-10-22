@@ -72,7 +72,7 @@ links wi = concat.(links').words'
 	        link = concat linkParts
 	links' (w1:rest) = camelCase wi w1 : links' rest
 
-isValidPagename = all (\c -> isAlphaNum c || c `elem` "._-" ) 
+isValidPagename = all (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
 specials wi []       = []
 specials wi  (line:r) | "##" `encloses` line = (case map toLower $ takeout "##" line of
@@ -84,15 +84,15 @@ specials wi  (line:r) | "##" `encloses` line = (case map toLower $ takeout "##" 
 				           ) ++ specials wi r
 	 	      | otherwise            = line : specials wi r
 
-formatRC = tagL "ol" . map formatChange
-  where	formatChange entry = tag "li" $ 
-  		"Revision : "++(show (revision entry)) ++"<br/>" ++
-  		"Author   : "++(      author   entry ) ++"<br/>" ++
-  		"Date     : "++(      date   entry ) ++"<br/>"++
-  		"Message  : "++(tag "p" $ message entry ) ++
-  		"Changed Files: "++(tag "ul" $ concatMap (
-				tag "li" . ("["\/"]"). pagename
-			) (paths entry) ) 
+formatRC = tagLP "ol" [("id","recentChanges")] . concatMap formatChange
+  where	formatChange entry = tagL "li" $ tagL "table" $
+                             map (tag "tr") $ map (\(a,b) -> tag "th" a ++ tag "td" b ) [ 
+  		("Revision:",show (revision entry)),
+  		("Author:"  ,      author   entry ),
+  		("Date:",          date   entry ),
+  		("Message:",      (tag "p" $ message entry )),
+  		("Changed Files:",(tag "ul" $ concatMap (tag "li" . ("["\/"]"). pagename) (paths entry) ) )
+		]
 
 
 encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub

@@ -1,4 +1,4 @@
-module HtmlStyle (htmlPage, tagP, tag, tagL, aHref, escape) where
+module HtmlStyle (htmlPage, tagP, tag, tagL, tagLP, aHref, escape) where
 
 import Common
 import Maybe
@@ -31,7 +31,9 @@ tagP name params body | null body = "<"++name++par++"/>"
                       | otherwise = "<"++name++par++">"++body++"</"++name++">"
 	where par = concatMap (\(p,v)-> " "++p++"=\""++v++"\"") params 
 tag name body= tagP name [] body
-tagL name body= ["<"++name++">"]++body++["</"++name++">"]
+tagL name body= tagLP name [] body
+tagLP name params body= ["<"++name++par++">"]++body++["</"++name++">"]
+	where par = concatMap (\(p,v)-> " "++p++"=\""++v++"\"") params 
 
 aHref href body = tagP "a" [("href",href)] body
 
