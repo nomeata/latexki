@@ -37,6 +37,7 @@ module Common (
 	filename,
 	dirname,
 	safeChdir,
+	writeFileSafe,
 
 	directoryFiles,
 	recursiveFiles,
@@ -81,6 +82,7 @@ logfilename = "./latexki-run.log"
 datadir     = "./data/"
 
 safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
+writeFileSafe file str = createDirectoryIfMissing True (dirname file) >> writeFile file str
 
 pagename = removeExt . fst . splitWikiPath
 filename = snd.FP.splitFileName 

@@ -14,6 +14,7 @@ import Common
 import Wiki
 import Latex
 import Generic
+import ImageFile
 import SVN
 
 pipes :: String -> ( [String], FileProcessor )
@@ -21,6 +22,8 @@ pipes "tex"   = (["html","pdf","log","output"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html"], procWiki    )
 pipes "css"   = (["html","css"], procCopyGen ) 
+pipes "png"   = (["html"], procImage ) 
+pipes "jpg"   = (["html"], procImage ) 
 pipes _       = (["html"], procGeneric ) 
 
 deps :: String -> DepCalculator
@@ -95,7 +98,7 @@ main = do
 	                                  else return ()
               else                             coSVN repos
 
-  inputfiles <- sort `liftM` recursiveFiles datadir
+  inputfiles <- (filter (not . isPrefixOf (drop 2 datadir) . pagename) . sort) `liftM` recursiveFiles datadir
   --inputfiles <- (filter (not.null.basename) . sort) `liftM` recursiveFiles datadir
 
   debug "Reading Configuration..."

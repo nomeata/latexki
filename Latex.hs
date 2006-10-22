@@ -34,11 +34,13 @@ uncomment (c:line)      = c:uncomment line
 	
 findSimpleCommands ""                       = []
 findSimpleCommands ('\\':rest1) | n == '{'             = (command,param) :findSimpleCommands rest3
-				| n == '[' && m == '{' = (command,param2):findSimpleCommands rest4
+				| n == '[' && (length rest3') > 2 && m == '{' =
+				                         (command,param2):findSimpleCommands rest4
                                 | otherwise            =                  findSimpleCommands (n:rest2)
 	where (command,n:rest2) = span (isAlpha) rest1
 	      (param,rest3)     = span (/='}')   rest2
-	      (_,_:m:rest3')    = span (/=']')   rest2
+	      (_,rest3')        = span (/=']')   rest2
+	      (_:m:rest3'')     = rest3'
 	      (param2,rest4)    = span (/='}')   rest3'
 findSimpleCommands (_:rest)                 =                 findSimpleCommands rest	      
 
@@ -81,7 +83,7 @@ prepareStripped tex wi = do
 			]
 	methods = [ (".part.tex", copy), (".tex",strip) ]
 	copy f t =  debugLn wi ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
-	strip f t = debugLn wi ("stripping " ++ f ++ " to " ++ t) >> ((writeFile t). strip' =<< readFile f)
+	strip f t = debugLn wi ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
 	 where 
 	 	strip' file = chaptertitle $ mainPart file 
 		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
@@ -134,7 +136,7 @@ procTex tex wi = do
 
 
 genHTML tex wi err = do 
-	writeFile target $ htmlPage wi tex (pagename tex) $ title ++ content
+	writeFileSafe target $ htmlPage wi tex (pagename tex) $ title ++ content
  where  title = tag "h1" ("Latex File: "++tex)
         content | err == ExitSuccess = 	"File successfully created:" ++
 	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File")),

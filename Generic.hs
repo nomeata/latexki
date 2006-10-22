@@ -9,7 +9,7 @@ procGeneric file wi = do
 	source <- readFile file
 	let content = if isReadable source then pre source else binary
 	    target  = (pagename file) ++ ".html"
-	writeFile target $ htmlPage wi (pagename file) (pagename file) content 
+	writeFileSafe target $ htmlPage wi (pagename file) (pagename file) content 
   where	isReadable = not.(any (=='\0'))
   	pre source = (tag "h1" file) ++
 	             (tagP "a" [("href",file)] "(download)") ++

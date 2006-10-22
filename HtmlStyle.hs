@@ -9,7 +9,7 @@ htmlPage wi title basename body =
   	tag "head" ( concat [
 		tagP "meta" [("http-equiv","Content-Type"),("content","text/html; charset=UTF-8")] "",
 		tag "title" ((mainTitle wi)++" - "++title++"</title>"),
-		tagP "link" [("rel","stylesheet"),("type","text/css"),("href","latexki-style.css")] ""
+		tagP "link" [("rel","stylesheet"),("type","text/css"),("href",stylefile)] ""
 	])
   )++(
   	tag "body" ((
@@ -26,6 +26,7 @@ htmlPage wi title basename body =
 	where li (t,l) = tag "li" $ aHref l $ t
 	      addmenuconf = fromMaybe "" . lookup "addmenu" . wikiConfig  $ wi
 	      addmenu =  map (\f -> (f,"./"++f++".html") ) $ words addmenuconf
+	      stylefile = backDir basename ++ "latexki-style.css"
 
 tagP name params body | null body = "<"++name++par++"/>"
                       | otherwise = "<"++name++par++">"++body++"</"++name++">"
