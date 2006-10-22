@@ -24,7 +24,8 @@ pipes ""      = (["html"], procWiki    )
 pipes "css"   = (["html","css"], procCopyGen ) 
 pipes "png"   = (["html"], procImage ) 
 pipes "jpg"   = (["html"], procImage ) 
-pipes _       = (["html"], procGeneric ) 
+pipes "eps"   = (["html"], procGeneric (Just True))
+pipes _       = (["html"], procGeneric Nothing) 
 
 deps :: String -> DepCalculator
 deps "tex"    = texDeps 
