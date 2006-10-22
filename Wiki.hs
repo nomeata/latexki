@@ -18,8 +18,8 @@ wikiDeps wiki wi = do
 procWiki wiki wi = do
 	content <- readFile wiki
 	let formatted = links wi $ unlines $ lineBased wi $ lines $ escape content
-	    target    = (basename wiki) ++ ".html"
-	writeFile target $ htmlPage wi (basename wiki) (basename wiki) formatted 
+	    target    = (pagename wiki) ++ ".html"
+	writeFile target $ htmlPage wi (pagename wiki) (pagename wiki) formatted 
 	debug wi "ok"
 
 lineBased wi = prefo.paras.lists.(map headers).(specials wi).(map stripWhitespace)
@@ -56,7 +56,7 @@ camelCase wi w = if isCamelCase w then linkPage wi w else w
 isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
-linkPage wi a | a `elem` basenames wi = (linkPageExt ext a) ++ more
+linkPage wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
               | otherwise             = a
  where linkPageExt ext txt = aHref(a ++"." ++ ext) txt
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
@@ -78,7 +78,7 @@ specials wi []       = []
 specials wi  (line:r) | "##" `encloses` line = (case map toLower $ takeout "##" line of
 				  		"hello"   -> ["Hello World"]
 						-- The next line is cool.
-						"sitemap" -> map ("* ["\/"]") $ sort $ basenames wi
+						"sitemap" -> map ("* ["\/"]") $ sort $ pagenames wi
 						"recentchanges" -> formatRC (recentChanges wi)
 						huh       -> ["Unknown Command \""++huh++"\""] 
 				           ) ++ specials wi r
@@ -91,7 +91,7 @@ formatRC = tagL "ol" . map formatChange
   		"Date     : "++(      date   entry ) ++"<br/>"++
   		"Message  : "++(tag "p" $ message entry ) ++
   		"Changed Files: "++(tag "ul" $ concatMap (
-				tag "li" . ("["\/"]"). basename
+				tag "li" . ("["\/"]"). pagename
 			) (paths entry) ) 
 
 

@@ -18,7 +18,7 @@ module Common (
 	debug,
 	debugLn,
 	mainTitle,
-	basenames,
+	pagenames,
 	outputs,
 	recentChanges,
 
@@ -29,7 +29,7 @@ module Common (
 	triple2,
 	triple3,
 
-	basename,
+	pagename,
 	splitFilePath,
 	splitWikiPath,
 	dirTrail,
@@ -61,8 +61,10 @@ type RecentChanges = [LogEntry]
 
 data LogEntry = LogEntry { revision :: Int, author :: String, date :: String, paths :: [FilePath], message :: String } deriving (Show)
 
+type PageName = String
+
 -- Data type
-data WikiInfo = WikiInfo {	sitemap :: [(String, String, [String]) ],
+data WikiInfo = WikiInfo {	sitemap :: [(PageName, String, [String]) ],
 				wikiConfig :: [(String,String)],
 				recentChanges :: RecentChanges,
 				debug :: String -> IO (),
@@ -70,7 +72,7 @@ data WikiInfo = WikiInfo {	sitemap :: [(String, String, [String]) ],
 			}
 mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
 
-basenames wi = map triple1 (sitemap wi)
+pagenames wi = map triple1 (sitemap wi)
 
 outputs wi = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) (sitemap wi)
 
@@ -79,13 +81,13 @@ datadir     = "./data/"
 
 safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
 
-basename = removeExt . fst . splitWikiPath
+pagename = removeExt . fst . splitWikiPath
 filename = snd.FP.splitFileName 
 dirname  = fst.FP.splitFileName
 
 removeExt = takeWhile (/='.')
 
-splitWikiPath :: FilePath -> (String, String)
+splitWikiPath :: FilePath -> (PageName, String)
 splitWikiPath path' = case break (== '.') path of
     (name, "")    -> (name, "")
     (name, _:ext) -> (name, ext)

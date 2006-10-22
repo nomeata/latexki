@@ -92,7 +92,7 @@ usesPST tex wi = do
 
 procTex tex wi = do
 	cwd <- getCurrentDirectory
-	safeChdir (dirname $ basename tex)
+	safeChdir (dirname $ pagename tex)
 	putStrLn . ( "In dir "++) =<< getCurrentDirectory
 	err <- whileOk =<< runLatex
 	case err of
@@ -102,9 +102,9 @@ procTex tex wi = do
 	putStrLn . ( "In dir "++) =<< getCurrentDirectory
 	genHTML tex wi err
 	return ()
-  where realsource = concat (replicate (length $ filter (=='/') $ basename tex) "../") ++ tex
-  	realbasename = filename $ basename tex
-  	pdffile  = basename tex ++ ".pdf"
+  where realsource = concat (replicate (length $ filter (=='/') $ pagename tex) "../") ++ tex
+  	realbasename = filename $ pagename tex
+  	pdffile  = pagename tex ++ ".pdf"
   	removeFileIfExists file = do exists <- doesFileExist file ; if exists then removeFile file else return ()
   	runLatex = do
 	prepareStripped realsource wi
@@ -129,7 +129,7 @@ procTex tex wi = do
 
 
 genHTML tex wi err = do 
-	writeFile target $ htmlPage wi tex (basename tex) $ title ++ content
+	writeFile target $ htmlPage wi tex (pagename tex) $ title ++ content
  where  title = tag "h1" ("Latex File: "++tex)
         content | err == ExitSuccess = 	"File successfully created:" ++
 	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File")),
@@ -139,8 +139,8 @@ genHTML tex wi err = do
 	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File?")),
 	                              (tag "li" (aHref logFile "Latex-Logfile")),
 	                              (tag "li" (aHref tex     "Latex-Source"))]))
-	pdfFile = (basename tex) ++ ".pdf"				      
-	logFile = (basename tex) ++ ".log" 
-	target  = (basename tex) ++ ".html" 
+	pdfFile = (pagename tex) ++ ".pdf"				      
+	logFile = (pagename tex) ++ ".log" 
+	target  = (pagename tex) ++ ".html" 
 
 
