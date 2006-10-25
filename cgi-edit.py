@@ -257,8 +257,8 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 </html>''' % { 'title': esc(title), 'form': form, 'error': errortext}).encode('utf8')
 
 def print_success(new, basename, ext, new_rev):
-	title = 'Successful commit'
-	text = "Sucessfully commited %s (a %s) to revision %i" %( esc(basename), ptype(ext), new_rev)
+	title = u'Successful commit'
+	text = u"Sucessfully commited %s (a %s) to revision %i" %( esc(basename), ptype(ext), new_rev)
 	print '''
 <html>
 <head>
@@ -272,8 +272,8 @@ def print_success(new, basename, ext, new_rev):
 
 
 def ptype(ext):
-	if ext: return FILETYPES.get(ext,"“.%s” file" % esc(ext))
-	else:   return "regular wiki page"
+	if ext: return FILETYPES.get(ext,u"“.%s” file" % esc(ext))
+	else:   return u"regular wiki page"
 
 
 main()
