@@ -139,7 +139,7 @@ def main ():
 def prepare_svn():
 	global client
 	client = pysvn.Client()
-	client.set_default_username((who + u' via svn').encode('utf8'))
+	client.set_default_username((who + u' via wiki').encode('utf8'))
 	zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
 	client.checkout(repos, '.',False,zero)
 
@@ -194,7 +194,7 @@ def print_headers():
 def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	if new:
 		if basename:
-			title = u"Creating new page \"%s\"" % basename
+			title = u"Creating new page “%s”" % basename
 			nameform = esc(basename)
 		else:
 			title = u"Creating new page"
@@ -209,7 +209,7 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 			<input type="radio" name="type" value="!other">Other, specify extension:
 			<input type="text" name="ext" size="5" /> '''%{'nameform':nameform}
 	else:
-		title = u"Editing page \"%s\" at revision %i" % (basename,rev)
+		title = u"Editing page “%s” at revision %i" % (basename,rev)
 		pageform = u'<h3>%(basename)s, a %(type)s' % { 'basename':esc(basename), 'type':ptype(ext)}
 	
 	errortext = ''
@@ -272,7 +272,7 @@ def print_success(new, basename, ext, new_rev):
 
 
 def ptype(ext):
-	if ext: return FILETYPES.get(ext,"\".%s\" file" % esc(ext))
+	if ext: return FILETYPES.get(ext,"“.%s” file" % esc(ext))
 	else:   return "regular wiki page"
 
 
