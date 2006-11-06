@@ -9,7 +9,10 @@ import Text.XML.HaXml.Combinators
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Verbatim
 
-data ChangedPath = Added file | Deleted file | Modified file | Other file
+{-
+  For later specification of the kind of deleted file
+ -data ChangedPath = Added FilePath | Deleted FilePath | Modified FilePath | Other FilePath
+-}
 
 import Common
 
