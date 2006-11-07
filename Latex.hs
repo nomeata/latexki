@@ -32,17 +32,18 @@ uncomment ('\\':c:line) = '\\':c:uncomment line
 uncomment ('%':_)       = ""
 uncomment (c:line)      = c:uncomment line
 	
-findSimpleCommands ""                       = []
-findSimpleCommands ('\\':rest1) | n == '{'             = (command,param) :findSimpleCommands rest3
-				| n == '[' && (length rest3') > 2 && m == '{' =
-				                         (command,param2):findSimpleCommands rest4
-                                | otherwise            =                  findSimpleCommands (n:rest2)
-	where (command,n:rest2) = span (isAlpha) rest1
-	      (param,rest3)     = span (/='}')   rest2
-	      (_,rest3')        = span (/=']')   rest2
+findSimpleCommands ""                       					= []
+findSimpleCommands ('\\':rest1) | n == '{'      				= (command,param) :findSimpleCommands rest3
+				| n == '[' && (length rest3') > 2 && m == '{' 	= (command,param2):findSimpleCommands rest4
+                                | otherwise          				= (command,""):findSimpleCommands (n:rest2)
+--				| command == "printindex"			= ("printindex", ""):findSimpleCommands (n:rest2)
+--                              | otherwise 					= findSimpleCommands (n:rest2)
+	where (command,n:rest2) = span isAlpha rest1
+	      (param,rest3)     = span (/='}') rest2
+	      (_,rest3')        = span (/=']') rest2
 	      (_:m:rest3'')     = rest3'
-	      (param2,rest4)    = span (/='}')   rest3'
-findSimpleCommands (_:rest)                 =                 findSimpleCommands rest	      
+	      (param2,rest4)    = span (/='}') rest3'
+findSimpleCommands (_:rest)                 									= findSimpleCommands rest	      
 
 
 depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
@@ -97,6 +98,9 @@ usesPST tex wi = do
 	file <- readFile tex
 	return $ ("usepackage", "pst-pdf")  `elem` (findSimpleCommands file)
 	
+usesIndex tex wi = do
+	file <- readFile tex
+	return $ ("printindex", "")  `elem` (findSimpleCommands file)
 
 procTex tex wi = do
 	cwd <- getCurrentDirectory
@@ -116,7 +120,7 @@ procTex tex wi = do
 	prepareStripped realsource wi
 
 	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
-	print env
+	
 	let runit c a = do
   		readNull <- return.Just =<< openFile "/dev/null" ReadMode
 	  	writeLog <- return.Just =<< openFile (realbasename  ++ ".output") WriteMode
@@ -131,7 +135,14 @@ procTex tex wi = do
 	        	]
 			else []
 	
-	return $ pstqueue ++ replicate 3 (runit "/usr/bin/pdflatex" [realsource])
+	usesIndex' <- usesIndex realsource wi
+	let indexqueue = if usesIndex'
+			then [
+				runit "makeindex" [ (realbasename ++ ".idx") ]
+			]
+			else []
+	
+	return $ pstqueue ++ [(runit "/usr/bin/pdflatex" [realsource])] ++ indexqueue ++ replicate 2 (runit "/usr/bin/pdflatex" [realsource])
 
 
 
