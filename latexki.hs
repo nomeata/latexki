@@ -136,9 +136,9 @@ main = do
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $
       		foundOutputs
-  debug $ "Deleting "++(show (length delete) ) ++ " old or temporary files.. "
-  mapM_ (\f -> debugLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
-  --mapM_ removeFile delete
+  debugLn $ "Deleting "++(show (length delete) ) ++ " old or temporary files:\n" ++ concat (intersperse ", " delete)
+  --mapM_ (\f -> debugLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
+  mapM_ removeFile delete
   debugLn "Done."
   hClose logfile
 
