@@ -18,9 +18,9 @@ import ImageFile
 import SVN
 
 pipes :: String -> ( [String], FileProcessor )
-pipes "tex"   = (["html","pdf","log","output"],  procTex  )
+pipes "tex"   = (["html","pdf"],  procTex  )
 pipes "latex" = pipes "tex"
-pipes ""      = (["html"], procWiki    )
+pipes ""      = (["html","pdf"], procWiki    )
 pipes "css"   = (["html","css"], procCopyGen ) 
 pipes "png"   = (["html"], procImage ) 
 pipes "jpg"   = (["html"], procImage ) 
@@ -132,7 +132,9 @@ main = do
   foundOutputs <- recursiveFiles "./"
   let expectedOutputs = map ("./"++) $ outputs wi
       systemFiles = [logfilename]
-      delete = filter (`notElem` expectedOutputs) $
+      debugExts   = [".log",".output"]
+      delete =  filter (\f -> not $ any (\e -> e `isSuffixOf` f) debugExts) $
+      		filter (`notElem` expectedOutputs) $
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $
       		foundOutputs

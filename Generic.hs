@@ -14,7 +14,7 @@ procGeneric isBinary file wi = do
 			return $ if isReadable source then pre source else binary
 		  else	if fromJust isBinary then return binary
 			else pre `liftM` readFile file
-	writeFileSafe target $ htmlPage wi (pagename file) (pagename file) content 
+	writeHtmlPage wi target (pagename file) (pagename file) content 
   where	isReadable = not.(any (=='\0'))
 	target  = (pagename file) ++ ".html"
   	pre source = (tag "h1" file) ++
