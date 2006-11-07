@@ -95,11 +95,13 @@ prepareStripped tex wi = do
 	
 
 usesPST tex wi = do
-	file <- readFile tex
+	file' <- readFile tex
+	let file = (unlines.(map uncomment).lines) file'
 	return $ ("usepackage", "pst-pdf")  `elem` (findSimpleCommands file)
 	
 usesIndex tex wi = do
-	file <- readFile tex
+	file' <- readFile tex
+	let file = (unlines.(map uncomment).lines) file'
 	return $ ("printindex", "")  `elem` (findSimpleCommands file)
 
 procTex tex wi = do
