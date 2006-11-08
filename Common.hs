@@ -32,6 +32,7 @@ module Common (
 	splitWikiPath,
 	dirTrail,
 	backDir,
+	editLink,
 	filename,
 	dirname,
 	safeChdir,
@@ -109,6 +110,8 @@ dirTrail' ('/':dir) = dir : dirTrail' dir
 dirTrail' path = dirTrail' $ dropWhile (/='/')  path
 
 backDir path =  concat $ replicate (length $ filter (=='/') path) "../"
+
+editLink page = backDir page ++ "cgi/edit/" ++ page
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x

@@ -72,14 +72,14 @@ isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
 linkPageL wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = "\\href{cgi/edit/"++a++"}{"++a++" (new)}"
+              | otherwise             = "\\href{"++ editLink a++"}{"++a++" (new)}"
  where linkPageExt ext txt = "\\href{"++ a ++"." ++ ext ++ "}{"++txt++"}"
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""
             | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
 
 linkPage wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = aHref ("cgi/edit/"++a) (a++" (new)")
+              | otherwise             = aHref (editLink a) (a++" (new)")
  where linkPageExt ext txt = aHref (a ++"." ++ ext) txt
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""

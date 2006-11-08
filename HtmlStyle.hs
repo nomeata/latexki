@@ -18,8 +18,8 @@ htmlPage wi title basename body =
 		tagP "div" [("class","menu")] ( tag "ul" (
 			concatMap li ([	("Start page", "./") ] ++
 					addmenu                ++
-				      [ ("Edit this", "./cgi/edit/"++basename),
-					("Create new page","./cgi/edit" )])
+				      [ ("Edit this", editLink basename),
+					("Create new page",editLink "" )])
 		))
 	)++(
 		tagP "div" [("class","content")] body
