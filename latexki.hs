@@ -6,6 +6,7 @@
 
 import System
 import System.IO
+import System.Posix.IO
 import Directory
 import Monad
 import List
@@ -44,25 +45,25 @@ actions file = do
 
 -- file1 depends upon file2
 -- Todo, only when new files are there. Probably hard
-needsUpdate debugLn file1 FileList          = do
-	debugLn $ "  "++file1++" updated because of possible new files"
+needsUpdate putStrLn file1 FileList          = do
+	putStrLn $ "  "++file1++" updated because of possible new files"
 	return True 
-needsUpdate debugLn file1 RepositoryChanges = do
-	debugLn $ "  "++file1++" updated because of Repositorychanges"
+needsUpdate putStrLn file1 RepositoryChanges = do
+	putStrLn $ "  "++file1++" updated because of Repositorychanges"
 	return True 
-needsUpdate debugLn file1 (FileDep file2)   = do 
+needsUpdate putStrLn file1 (FileDep file2)   = do 
 	ex <- doesFileExist file1
 	ex2 <- doesFileExist file2
 	needs_update <-
 	  if not ex2 then do
-		debugLn $ "WARNING: Dependency "++file2++" does not exist"
+		putStrLn $ "WARNING: Dependency "++file2++" does not exist"
 		return False
 	  else if ex then do
 		date1 <- getModificationTime file1
 		date2 <- getModificationTime file2
 		return $ date1 < date2
 	    else return True
-	when needs_update $ debugLn $ "  "++file1++" update because of "++file2
+	when needs_update $ putStrLn $ "  "++file1++" update because of "++file2
 	return needs_update
 
 anyM  cond list = mapM cond list >>= return.or
@@ -89,10 +90,14 @@ main = do
   setCurrentDirectory outdir
 
   terminal <- hIsTerminalDevice stdout
-  logfile <- openFile logfilename WriteMode
-  let debug str = do	if terminal then hPutStr stdout str else return ()
-  			hPutStr logfile str
-  let debugLn = debug . (++"\n")
+  if not terminal then do
+  	-- if we try to run this program on windows, this might make problems
+	  logfile   <- openFile logfilename WriteMode
+	  logfileFd <- handleToFd logfile
+	  dupTo logfileFd stdError
+	  dupTo logfileFd stdOutput
+	  return ()
+	else return ()		 
 
   exported <- doesDirectoryExist (datadir++".svn")
   if exported then if "-n" `notElem` opts then updateSVN repos
@@ -102,48 +107,46 @@ main = do
   inputfiles <- (filter (not . isPrefixOf (drop 2 datadir) . pagename) . sort) `liftM` recursiveFiles datadir
   --inputfiles <- (filter (not.null.basename) . sort) `liftM` recursiveFiles datadir
 
-  debug "Reading Configuration..."
+  putStr "Reading Configuration..."
   config <- readConfig
-  debugLn "done."
+  putStrLn "done."
 
-  debug "Generating Sitemap..."
+  putStr "Generating Sitemap..."
   (sm, todo'') <- unzip `liftM` mapM actions inputfiles
-  debugLn $ (show $ length sm) ++ " base files."
+  putStrLn $ (show $ length sm) ++ " base files."
 
-  debug "Generating Recent Changes.."
+  putStr "Generating Recent Changes.."
   rc <- if "-n" `notElem` opts then getSVNRecentChanges repos else return []
-  debugLn "Done."
+  putStrLn "Done."
   
-  let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc, debug=debug, debugLn=debugLn}
+  let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc}
 
-  debug "Getting Dependencies..."
+  putStr "Getting Dependencies..."
   todo' <- mapM ( \(act,dep) -> dep wi >>= return.((,) act) ) todo'' 
-  debugLn "Done."
+  putStrLn "Done."
 
-  debugLn "Checking for up-to-dateness..."
-  todo <- filterM (\((_,t),d) -> anyM2 (needsUpdate debugLn) t d) todo' >>= return.(map fst)
-  debugLn $ (show $ length todo)++" left to do."
+  putStrLn "Checking for up-to-dateness..."
+  todo <- filterM (\((_,t),d) -> anyM2 (needsUpdate putStrLn) t d) todo' >>= return.(map fst)
+  putStrLn $ (show $ length todo)++" left to do."
 
-  debugLn "Generating files... "
-  mapM_ (\(a,f) -> debug ((concat(intersperse ", " f))++"...") >> a wi >> debugLn ".") todo
-  debugLn "Done."
+  putStrLn "Generating files... "
+  mapM_ (\(a,f) -> putStr ((concat(intersperse ", " f))++"...") >> a wi >> putStrLn ".") todo
+  putStrLn "Done."
 
-  debugLn "Cleaning up..."
+  putStrLn "Cleaning up..."
   foundOutputs <- recursiveFiles "./"
   let expectedOutputs = map ("./"++) $ outputs wi
       systemFiles = [logfilename]
-      debugExts   = [".log",".output"]
-      delete =  filter (\f -> not $ any (\e -> e `isSuffixOf` f) debugExts) $
+      putStrExts   = [".log",".output"]
+      delete =  filter (\f -> not $ any (\e -> e `isSuffixOf` f) putStrExts) $
       		filter (`notElem` expectedOutputs) $
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $
       		foundOutputs
-  debugLn $ "Deleting "++(show (length delete) ) ++ " old or temporary files:\n" ++ concat (intersperse ", " delete)
-  --mapM_ (\f -> debugLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
+  putStrLn $ "Deleting "++(show (length delete) ) ++ " old or temporary files:\n" ++ concat (intersperse ", " delete)
+  --mapM_ (\f -> putStrLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
   mapM_ removeFile delete
-  debugLn "Done."
-  hClose logfile
-
+  putStrLn "Done."
 
   return ()
 

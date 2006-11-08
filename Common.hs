@@ -15,8 +15,6 @@ module Common (
 	WikiInfo(WikiInfo),
 	sitemap,
 	wikiConfig,
-	debug,
-	debugLn,
 	mainTitle,
 	pagenames,
 	outputs,
@@ -68,9 +66,7 @@ type PageName = String
 -- Data type
 data WikiInfo = WikiInfo {	sitemap :: [(PageName, String, [String]) ],
 				wikiConfig :: [(String,String)],
-				recentChanges :: RecentChanges,
-				debug :: String -> IO (),
-				debugLn :: String -> IO ()
+				recentChanges :: RecentChanges
 			}
 mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
 

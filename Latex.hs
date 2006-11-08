@@ -83,8 +83,8 @@ prepareStripped tex wi = do
 				(suf,m) <- methods
 			]
 	methods = [ (".part.tex", copy), (".tex",strip) ]
-	copy f t =  debugLn wi ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
-	strip f t = debugLn wi ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
+	copy f t =  putStrLn ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
+	strip f t = putStrLn ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
 	 where 
 	 	strip' file = chaptertitle $ mainPart file 
 		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
@@ -110,8 +110,8 @@ procTex tex wi = do
 	err <- whileOk =<< runLatex
 	setCurrentDirectory cwd
 	case err of
-		ExitFailure _ -> debug wi (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
-		ExitSuccess   -> debug wi "ok"
+		ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
+		ExitSuccess   -> putStr "ok"
 	genHTML tex wi err
 	return ()
   where realsource = backDir (pagename tex) ++ tex

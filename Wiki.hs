@@ -22,7 +22,7 @@ procWiki wiki wi = do
 	    formattedL = linksL wi $ unlines $ lineBasedL wi $ lines $ escapeL content
 	writeHtmlPage wi (pagename wiki ++ ".html") (pagename wiki) (pagename wiki) formatted 
 	writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki)  formattedL
-	debug wi "ok"
+	putStr "ok"
 
 lineBasedL wi = prefoL.parasL.listsL.(map headersL).(specials formatRCL wi).(map stripWhitespace)
 lineBased  wi = prefo. paras. lists. (map headers) .(specials formatRC wi) .(map stripWhitespace)
