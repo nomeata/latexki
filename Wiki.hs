@@ -33,7 +33,7 @@ headersL line | hl == 0  = line
               | hl == 1  = "\\section*{" ++ header ++ "}"
               | hl == 2  = "\\subsection*{" ++ header ++ "}"
               | hl == 3  = "\\subsubsection*{" ++ header ++ "}"
-              | hl >  4  = "\\paragraph{" ++ header ++ "}"
+              | hl >  3  = "\\paragraph{" ++ header ++ "}"
 	where (hl, header) = parseHeader line
 
 headers line | hl == 0  = line
@@ -72,15 +72,15 @@ isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord)
 
 linkPageL wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = a
+              | otherwise             = "\\href{cgi/edit/"++a++"}{"++a++" (new)}"
  where linkPageExt ext txt = "\\href{"++ a ++"." ++ ext ++ "}{"++txt++"}"
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""
             | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
 
 linkPage wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = a
- where linkPageExt ext txt = aHref(a ++"." ++ ext) txt
+              | otherwise             = aHref ("cgi/edit/"++a) (a++" (new)")
+ where linkPageExt ext txt = aHref (a ++"." ++ ext) txt
        (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
        more | null exts  = ""
             | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
