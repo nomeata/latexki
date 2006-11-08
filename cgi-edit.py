@@ -121,7 +121,7 @@ def main ():
 		
 		# do SVN stuff here
 
-		if filename:
+		if filename and not new:
 			content = file(filename,'r').read().decode('utf8')
 		else:
 			content = 'Enter new page here'
