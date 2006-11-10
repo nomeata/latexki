@@ -97,7 +97,7 @@ parseSpecial wi l = case map toLower $ takeout "!!" l of
 
 parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg
   where msg = parseInline wi raw_msg
-  	links = map (mkLink wi) paths
+  	links = map (mkLink wi . pagename) paths
 
 encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
 takeout  sub    = (drop (length sub)).reverse.(drop (length sub)).reverse
