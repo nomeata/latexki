@@ -29,6 +29,7 @@ module Common (
 	dirname,
 	safeChdir,
 	writeFileSafe,
+	safeRemoveFile,
 
 	directoryFiles,
 	recursiveFiles,
@@ -71,6 +72,8 @@ datadir     = "./data/"
 
 safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
 writeFileSafe file str = createDirectoryIfMissing True (dirname file) >> writeFile file str
+safeRemoveFile file = do exists <- doesFileExist file
+                         if exists then removeFile file else return ()
 
 pagename = removeExt . fst . splitWikiPath
 filename = snd.FP.splitFileName 

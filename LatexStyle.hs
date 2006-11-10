@@ -1,26 +1,38 @@
-module LatexStyle (writeLatexPage, escapeL, envL, envLL) where
+module LatexStyle (writeLatexPage) where
+
+import WikiData
+import Common
 
 import System.Process
 import System.IO
-
-
-import Common
+import System.Directory
+import System
 import Maybe
+import List
+
 
 writeLatexPage wi file title basename body = do
   writeFileSafe (file ++ ".tex") $ latexFile wi title basename body
+  cwd <- getCurrentDirectory
   readNull <- return.Just =<< openFile "/dev/null" ReadMode
   writeLog <- return.Just =<< openFile (file ++ ".output") WriteMode
-  runProcess "pdflatex" [file++".tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
+  safeChdir (dirname file)
+  err <- runProcess "pdflatex" [(filename file)++".tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
+  setCurrentDirectory cwd
+  case err of
+	ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> safeRemoveFile  (file ++ ".pdf")
+	ExitSuccess   -> putStr "ok"
+  
 
 
 latexFile wi title basename body = 
   "\\documentclass{article}\n"++
   "\\usepackage[utf8]{inputenc}\n"++
   "\\usepackage{hyperref}\n"++
+  "\\usepackage{graphicx}\n"++
   "\\hypersetup{pdfpagemode=None,pdftitle="++title++",pdfpagelayout=OneColumn,pdfstartview=FitH,pdfview=FitH}"++
-  "\\title{"++(escapeL title)++"}\n"++
-  "\\begin{document}"++ body ++ "\\end{document}"
+  "\\title{"++(escape title)++"}\n"++
+  "\\begin{document}"++ (concatMap render body) ++ "\\end{document}"
  {-
   tag "html" ((
   	tag "head" ( concat [
@@ -47,8 +59,46 @@ latexFile wi title basename body =
 -}
 
 escapes = [('\\',"\\textbackslash"),('&',"\\&"),('%',"\\%"),('#',"\\#"),('$',"\\$"),('^',"\\^"),('_',"\\_") ]
-escapeL ""    = ""
-escapeL (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escapeL r
+escape ""    = ""
+escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
 
-envL name body  = "\\begin{"++name++"}"++body++"\\end{"++name++"}"
-envLL name body  = ["\\begin{"++name++"}"]++body++["\\end{"++name++"}"]
+env name body  = "\\begin{"++name++"}"++body++"\\end{"++name++"}"
+
+aHref href txt = "\\href{"++href++"}{"++txt++"}"
+
+render (Paragraph text)  = "\n\n"++ (                       concatMap renderInline   text) ++"\n\n"
+render (EnumList  items) = env "enumerate" (concatMap (("\\item "++).(concatMap renderInline)) items)
+render (ItemList  items) = env "itemize"   (concatMap (("\\item "++).(concatMap renderInline)) items)
+render (PreFormat str)   = env "verbatim"  (str)
+render (HLine)           = "\n\\hrule\n"
+render (Header 1 text) = "\\section*{"++ (escape text) ++"}"
+render (Header 2 text) = "\\subsection*{"++ (escape text) ++"}"
+render (Header 3 text) = "\\subsubsection*{"++ (escape text) ++"}"
+render (Header 4 text) = "\\paragraph{"++ (escape text) ++"}"
+render (Header _ text) = "\\textbf{"++ (escape text) ++"}"
+render (RCElem [])     = ""
+render (RCElem changes)  = env "enumerate" $ concatMap formatChange changes
+  where	formatChange entry = ("\\item "++) $ env "description" $
+                             concatMap (\(a,b) -> "\\item["++a ++"] "++ b ) [ 
+  		("Revision:",                show         (revision entry)),
+  		("Author:"  ,                escape       (author   entry)),
+  		("Date:",                    escape       (date     entry)),
+  		("Message:",       concatMap renderInline (message  entry)),
+  		("Changed Files:",(env "itemize" $ concatMap (("\\item "++).renderLink) (links entry)))
+		]
+
+renderInline (Text str)      = escape str
+renderInline (LinkElem link) = renderLink link
+renderInline (Image src alt) = "\\includegraphics[width=\\linewidth]{"++ escape src ++"}"
+
+renderLink (Link base txt (ext:exts)) = aHref (with ext) (escape txt) ++ more
+  where with ext          = escape (base ++"."++ ext)
+ 	more | null exts  = ""
+             | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
+
+renderLink (NewLink base)       = aHref (escape (editLink base)) (escape (base ++ "(new)")) 
+renderLink (DLLink file)        = aHref (escape file)            (escape (file ++ "(download)")) 
+renderLink (PlainLink href txt) = aHref (escape href)            (escape txt)
+
+linkto a = aHref (escape a) (escape a)
+

@@ -112,14 +112,13 @@ procTex tex wi = do
 	err <- whileOk =<< runLatex
 	setCurrentDirectory cwd
 	case err of
-		ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> removeFileIfExists pdffile
+		ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> safeRemoveFile pdffile
 		ExitSuccess   -> putStr "ok"
 	genHTML tex wi err
 	return ()
   where realsource = backDir (pagename tex) ++ tex
   	realbasename = filename $ pagename tex
   	pdffile  = pagename tex ++ ".pdf"
-  	removeFileIfExists file = do exists <- doesFileExist file ; if exists then removeFile file else return ()
   	runLatex = do
 	prepareStripped realsource wi
 

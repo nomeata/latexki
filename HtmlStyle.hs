@@ -6,7 +6,7 @@ import WikiData
 import Maybe
 import List
 
-writeHtmlPage wi file title basename body = writeFileSafe file $ htmlPage wi title basename body
+writeHtmlPage wi file title basename body = writeFileSafe file $ htmlPage wi title basename body 
 
 htmlPage wi title basename body = 
   "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" ++ (

@@ -23,8 +23,8 @@ pipes "tex"   = (["html","pdf"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html","pdf"], procWiki    )
 pipes "css"   = (["html","css"], procCopyGen ) 
-pipes "png"   = (["html"], procImage ) 
-pipes "jpg"   = (["html"], procImage ) 
+pipes "png"   = (["html","pdf"], procImage ) 
+pipes "jpg"   = (["html","pdf"], procImage ) 
 pipes "eps"   = (["html"], procGeneric (Just True))
 pipes _       = (["html"], procGeneric Nothing) 
 

@@ -24,8 +24,7 @@ procWiki wiki wi = do
 	content <- readFile wiki
 	let parsed  = parse wi $ map stripWhitespace $ lines  content
 	writeHtmlPage wi (pagename wiki ++ ".html") (pagename wiki) (pagename wiki) parsed 
---	writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki)  parsed
-	putStr "ok"
+	writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki)  parsed
 
 stripWhitespace = reverse.(dropWhile (==' ')).reverse
 
@@ -95,17 +94,6 @@ parseSpecial wi l = case map toLower $ takeout "!!" l of
 			"sitemap" -> ItemList $ map ((:[]) . LinkElem . (mkLink wi)) $ sort $ pagenames wi
 			"recentchanges" -> RCElem (map (parseRC wi) (recentChanges wi))
 			huh       -> Paragraph [Text ("Unknown Command \""++huh++"\"")]
-
-{-formatRCL = envLL "enumerate" . concatMap formatChange
-  where	formatChange entry = (["\\item"]++) $ envLL "description" $
-                             map (\(a,b) -> "\\item["++a ++"] "++ b ) [ 
-  		("Revision:",show (revision entry)),
-  		("Author:"  ,      author   entry ),
-  		("Date:",          date   entry ),
-  		("Message:",       message entry ),
-  		("Changed Files:",(envL "itemize" $ concatMap (("\\item "++) . ("["\/"]") . pagename) (paths entry)))
-		]
--}
 
 parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg
   where msg = parseInline wi raw_msg
