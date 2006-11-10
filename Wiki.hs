@@ -1,4 +1,7 @@
+{-# OPTIONS -fglasgow-exts #-}
+
 module Wiki (wikiDeps, procWiki) where
+
 
 import FilePath
 import List
@@ -8,6 +11,7 @@ import Maybe
 import Common
 import HtmlStyle
 import LatexStyle
+import WikiData
 
 wikiDeps wiki wi = do
 	content <- readFile wiki
@@ -18,108 +22,81 @@ wikiDeps wiki wi = do
 
 procWiki wiki wi = do
 	content <- readFile wiki
-	let formatted  = links  wi $ unlines $ lineBased  wi $ lines $ escape  content
-	    formattedL = linksL wi $ unlines $ lineBasedL wi $ lines $ escapeL content
-	writeHtmlPage wi (pagename wiki ++ ".html") (pagename wiki) (pagename wiki) formatted 
-	writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki)  formattedL
+	let parsed  = parse wi $ map stripWhitespace $ lines  content
+	writeHtmlPage wi (pagename wiki ++ ".html") (pagename wiki) (pagename wiki) parsed 
+--	writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki)  parsed
 	putStr "ok"
-
-lineBasedL wi = prefoL.parasL.listsL.(map headersL).(specials formatRCL wi).(map stripWhitespace)
-lineBased  wi = prefo. paras. lists. (map headers) .(specials formatRC wi) .(map stripWhitespace)
 
 stripWhitespace = reverse.(dropWhile (==' ')).reverse
 
-headersL line | hl == 0  = line
-              | hl == 1  = "\\section*{" ++ header ++ "}"
-              | hl == 2  = "\\subsection*{" ++ header ++ "}"
-              | hl == 3  = "\\subsubsection*{" ++ header ++ "}"
-              | hl >  3  = "\\paragraph{" ++ header ++ "}"
-	where (hl, header) = parseHeader line
-
-headers line | hl == 0  = line
-             | hl >  0  = tag ("h"++(show hl)) header
-	where (hl, header) = parseHeader line
+parse wi []                          = []
+parse wi (l:r)	| null l             =                      parse wi r 
+		| hl > 0             = Header hl header   : parse wi r
+		| isSpecialLine l    = parseSpecial wi l  : parse wi r
+		| isHLine l          = HLine              : parse wi r
+		| isListLine l       = parseList wi (l:r)
+		| isPreLine  l       = parsePre  wi (l:r)
+		| isParaLine l       = parsePara wi (l:r)
+		| otherwise          = error ("Unknown line "++l)
+  where (hl, header) = parseHeader l	
 
 parseHeader line | "=" `encloses` line  = add $ parseHeader $ takeout "=" line
                  | otherwise            = (0, line)
 	where add (x,y) = (x+1,y)
 
-groupLines cond markup lines | null list = cont
-                             | otherwise = markup list ++ cont
+isListLine = isPrefixOf "*"
+isPreLine = isPrefixOf " "
+isSpecialLine = ("!!" `encloses`)
+isHLine l = length l >= 4 && all (`elem` "=-_") l
+isParaLine l = not (isListLine l) && not (isPreLine l) && not (null l) &&
+               not (fst (parseHeader l) > 0) && not (isSpecialLine l)
+
+parseList wi = parseLines wi isListLine  ItemList             (parseInline wi . tail)
+parsePre  wi = parseLines wi isPreLine  (PreFormat . unlines)  tail
+parsePara wi = parseLines wi isParaLine (Paragraph . concat)  (parseInline wi)
+
+parseLines :: forall t . WikiInfo 
+              -> (String -> Bool)
+              -> ([t] -> DocElement)
+              -> (String -> t)
+              -> [String]
+              -> Document 
+parseLines wi cond markup mapF lines	| null list = error "Did not find what I should parse"
+					| otherwise = markup (map mapF list) : parse wi rest
 	where (list,rest) = span cond lines
-	      cont  | null rest = []
-	            | otherwise = head rest:(groupLines cond markup (tail rest))
 
-listsL = groupLines (isPrefixOf "*") ((["\\begin{enumerate}"] ++).(++ ["\\end{enumerate}"]).(map (("\\item "++).tail)))
-parasL = groupLines isJustText       ( ++[""])
-prefoL = groupLines (isPrefixOf " ") ((["\\begin{verbatim}"] ++).(++ ["\\end{verbatim}"]).(map tail))
+parseInline wi [] = []
+parseInline wi t | isCamelCase word      = LinkElem (mkLink wi word) : parseInline wi wrest 
+                 | isBracketLink         = LinkElem (mkLink wi link) : parseInline wi (tail lrest)
+		 | not (null space)      = Text space                : parseInline wi srest
+		 | not (null word)       = Text word                 : parseInline wi wrest
+		 | isBrokenLink          = Text [head t]             : parseInline wi (tail t)
+		 | otherwise             = error $ "Unhandled case in parseInline: "++t
+  where	(link, lrest)     = span (not . (== ']')) (tail t)
+  	(word, wrest)     = span isAlphaNum t
+  	(space, srest)    = span isNormalNonWord t
+  	isNormalNonWord c = not (isAlphaNum c) && not (c == '[')
+	isBrokenLink	  = "[" `isPrefixOf` t && not isBracketLink
+	isBracketLink     = "[" `isPrefixOf`t  && not (null lrest) && isValidPagename link 
 
-lists = groupLines (isPrefixOf "*") ((tagL "ul").(map ((tag "li").tail)))
-paras = groupLines isJustText       ( tagL "p")
-prefo = groupLines (isPrefixOf " ") ((tagL "pre").(map tail))
 
-isJustText l = not (isPrefixOf "<" l) &&
-	       not (null l)
-
-words' text = a : cont
-	where (a,b) = span (isAlphaNum) text     
-	      cont | null b    = []
-	           | otherwise = [head b] : words' (tail b)
-
-camelCase  wi w = if isCamelCase w then linkPage  wi w else w
-camelCaseL wi w = if isCamelCase w then linkPageL wi w else w
 isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord) && all isAscii (w:ord)
 
-linkPageL wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = "\\href{"++ editLink a++"}{"++a++" (new)}"
- where linkPageExt ext txt = "\\href{"++ a ++"." ++ ext ++ "}{"++txt++"}"
-       (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
-       more | null exts  = ""
-            | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
-
-linkPage wi a | a `elem` pagenames wi = (linkPageExt ext a) ++ more
-              | otherwise             = aHref (editLink a) (a++" (new)")
- where linkPageExt ext txt = aHref (a ++"." ++ ext) txt
-       (ext:exts) = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
-       more | null exts  = ""
-            | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> linkPageExt e e) exts)++")"
-
-links  wi = linksG wi linkPage  camelCase
-linksL wi = linksG wi linkPageL camelCaseL
-
-linksG wi linkPageF camelCaseF = concat.(links').words'
-  where links' [] = []
-	links' ("[":rest )  | null after                                  = "["               : links' rest
-	                    | isValidPagename link && (head after) == "]" = linkPageF wi link : links' (tail after)
-	                    | otherwise                                   = "["               : links' rest
-	  where (linkParts,after) = span (/="]") rest
-	        link = concat linkParts
-	links' (w1:rest) = camelCaseF wi w1 : links' rest
+mkLink wi a | a `elem` pagenames wi = Link a a exts
+            | otherwise             = NewLink a
+ where exts = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
 
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
-specials formatRCF wi []       = []
-specials formatRCF wi (line:r) | "!!" `encloses` line = (case map toLower $ takeout "!!" line of
-				  		"hello"   -> ["Hello World"]
-						-- The next line is cool.
-						"sitemap" -> map ("* ["\/"]") $ sort $ pagenames wi
-						"recentchanges" -> formatRCF (recentChanges wi)
-						huh       -> ["Unknown Command \""++huh++"\""] 
-				           ) ++ specials formatRCF wi r
-	 	      | otherwise            = line : specials formatRCF wi r
+parseSpecial wi l = case map toLower $ takeout "!!" l of
+			"hello"   -> Paragraph [Text "Hello World"]
+			-- The next line is a beast
+			"sitemap" -> ItemList $ map ((:[]) . LinkElem . (mkLink wi)) $ sort $ pagenames wi
+			"recentchanges" -> RCElem (map (parseRC wi) (recentChanges wi))
+			huh       -> Paragraph [Text ("Unknown Command \""++huh++"\"")]
 
-formatRC = tagLP "ol" [("id","recentChanges")] . concatMap formatChange
-  where	formatChange entry = tagL "li" $ tagL "table" $
-                             map (tag "tr") $ map (\(a,b) -> tag "th" a ++ tag "td" b ) [ 
-  		("Revision:",show (revision entry)),
-  		("Author:"  ,      author   entry ),
-  		("Date:",          date   entry ),
-  		("Message:",      (tag "p" $ message entry )),
-  		("Changed Files:",(tag "ul" $ concatMap (tag "li" . ("["\/"]"). pagename) (paths entry) ) )
-		]
-
-formatRCL = envLL "enumerate" . concatMap formatChange
+{-formatRCL = envLL "enumerate" . concatMap formatChange
   where	formatChange entry = (["\\item"]++) $ envLL "description" $
                              map (\(a,b) -> "\\item["++a ++"] "++ b ) [ 
   		("Revision:",show (revision entry)),
@@ -128,8 +105,14 @@ formatRCL = envLL "enumerate" . concatMap formatChange
   		("Message:",       message entry ),
   		("Changed Files:",(envL "itemize" $ concatMap (("\\item "++) . ("["\/"]") . pagename) (paths entry)))
 		]
+-}
 
+parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg
+  where msg = parseInline wi raw_msg
+  	links = map (mkLink wi) paths
 
 encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
 takeout  sub    = (drop (length sub)).reverse.(drop (length sub)).reverse
 (\/) pre post str = pre ++ str ++ post
+
+

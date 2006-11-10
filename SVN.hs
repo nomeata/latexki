@@ -9,6 +9,8 @@ import Text.XML.HaXml.Combinators
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Verbatim
 
+import WikiData
+
 {-
   For later specification of the kind of deleted file
  -data ChangedPath = Added FilePath | Deleted FilePath | Modified FilePath | Other FilePath
@@ -42,7 +44,7 @@ getSVNRecentChanges repos = do
 
 toLogEntries (Document _ _ logs _ ) = map toLogEntry $ elm `o` children $ CElem logs
 
-toLogEntry entry = LogEntry revision author date paths message
+toLogEntry entry = RawLogEntry revision author date paths message
   where	getElem name = verbatim $ txt `o` children `o` tagWith (==name) `o` children $ entry
   	revision = read $ verbatim $ find "revision" literal $ entry
 	author	 = getElem "author"

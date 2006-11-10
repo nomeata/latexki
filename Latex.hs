@@ -8,6 +8,8 @@ import System.IO
 import System
 import Char
 import List
+
+import WikiData
 import Common
 import HtmlStyle
 
@@ -150,17 +152,26 @@ procTex tex wi = do
 
 genHTML tex wi err = do 
 	writeFileSafe target $ htmlPage wi tex (pagename tex) $ title ++ content
- where  title = tag "h1" ("Latex File: "++tex)
-        content | err == ExitSuccess = 	"File successfully created:" ++
-	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File")),
-	                              (tag "li" (aHref logFile "Latex-Logfile")),
-	                              (tag "li" (aHref (datadir++tex) "Latex-Source"))]))
-                | otherwise          = 	"File not successfully created ("++(show err)++":"++
-	           (tag "ul" (concat [(tag "li" (aHref pdfFile "PDF-File?")),
-	                              (tag "li" (aHref logFile "Latex-Logfile")),
-	                              (tag "li" (aHref tex     "Latex-Source"))]))
+ where  title = [Header 1 ("Latex File: "++tex)]
+        content | err == ExitSuccess = 
+			[Paragraph [Text "File successfully created:"],
+			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
+			           [LinkElem (PlainLink logFile "Latex-Logfile")],
+			           [LinkElem (PlainLink outFile "Latex-Output")],
+			           [LinkElem (PlainLink texFile "Latex-Source")]]
+			]
+                | otherwise          = 	
+			[Paragraph [Text ("File not successfully created ("++(show err)++"):")],
+			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File (?)")],
+			           [LinkElem (PlainLink logFile "Latex-Logfile")],
+			           [LinkElem (PlainLink outFile "Latex-Output")],
+			           [LinkElem (PlainLink texFile "Latex-Source")]]
+			]
 	pdfFile = (pagename tex) ++ ".pdf"				      
 	logFile = (pagename tex) ++ ".log" 
+	outFile = (pagename tex) ++ ".output" 
+	texFile = (backDir tex) ++ tex
 	target  = (pagename tex) ++ ".html" 
+
 
 
