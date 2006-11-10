@@ -28,8 +28,10 @@ writeLatexPage wi file title basename body = do
 latexFile wi title basename body = 
   "\\documentclass{article}\n"++
   "\\usepackage[utf8]{inputenc}\n"++
+  "\\usepackage[T1]{fontenc}\n"++
   "\\usepackage{hyperref}\n"++
   "\\usepackage{graphicx}\n"++
+  "\\DeclareUnicodeCharacter{2190}{$\\leftarrow$}"++ -- really needed?
   "\\hypersetup{pdfpagemode=None,pdftitle="++title++",pdfpagelayout=OneColumn,pdfstartview=FitH,pdfview=FitH}"++
   "\\title{"++(escape title)++"}\n"++
   "\\begin{document}"++ (concatMap render body) ++ "\\end{document}"
@@ -58,7 +60,7 @@ latexFile wi title basename body =
 	      stylefile = backDir basename ++ "latexki-style.css"
 -}
 
-escapes = [('\\',"\\textbackslash"),('&',"\\&"),('%',"\\%"),('#',"\\#"),('$',"\\$"),('^',"\\^"),('_',"\\_") ]
+escapes = [('\\',"\\textbackslash{}"),('&',"\\&"),('%',"\\%"),('#',"\\#"),('$',"\\$"),('^',"\\^"),('_',"\\_") ]
 escape ""    = ""
 escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
 
