@@ -205,7 +205,8 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 			%(nameform)s
 			<h3>Page Type</h3>
 			<input type="radio" name="type" value="!wiki" checked="checked">Wiki page</input>
-			<input type="radio" name="type" value="tex">LaTeX page</input>
+			<input type="radio" name="type" value="tex">LaTeX document</input>
+			<input type="radio" name="type" value="part.tex">Partial LaTeX document</input>
 			<input type="radio" name="type" value="!other">Other, specify extension:
 			<input type="text" name="ext" size="5" /> '''%{'nameform':nameform}
 	else:
