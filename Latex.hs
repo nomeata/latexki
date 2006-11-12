@@ -85,8 +85,10 @@ prepareStripped tex wi = do
 				(suf,m) <- methods
 			]
 	methods = [ (".part.tex", copy), (".tex",strip) ]
-	copy f t =  putStrLn ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
-	strip f t = putStrLn ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
+	--copy f t =  putStrLn ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
+	copy f t = copyFile f t
+	--strip f t = putStrLn ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
+	strip f t = ((writeFileSafe t). strip' =<< readFile f)
 	 where 
 	 	strip' file = chaptertitle $ mainPart file 
 		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
