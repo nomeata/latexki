@@ -19,7 +19,6 @@ import ImageFile
 import SVN
 import DepMapT
 
---import qualified Data.Set as S
 import Data.Map ((!))
 
 pipes :: String -> ( [String], FileProcessor )
@@ -38,7 +37,7 @@ deps "latex"  = deps "tex"
 deps ""       = wikiDeps
 deps _        = const . return . (:[]) . fileDep
 
-anyDep wi file = putStrLn ("Dependencying "++ file) >> deps (snd (splitWikiPath file)) file wi
+anyDep wi file = deps (snd (splitWikiPath file)) file wi
 
 actions file = do 
 	let  (basename, ext) = splitWikiPath file

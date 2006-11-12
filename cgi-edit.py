@@ -16,7 +16,8 @@ import pysvn
 def esc(str): return cgi.escape(str, True)
 
 FILETYPES={
-	'tex':       'Latex File',
+	'tex':       'LaTeX Document',
+	'part.tex':  'partial LaTeX Document',
 	'hs':        'Haskell Code File',
 	'py':        'Python Code File',
 	'wiki-conf': 'Wiki Configuration File',
