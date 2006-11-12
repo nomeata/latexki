@@ -17,6 +17,10 @@ import Latex
 import Generic
 import ImageFile
 import SVN
+import DepMapT
+
+--import qualified Data.Set as S
+import Data.Map ((!))
 
 pipes :: String -> ( [String], FileProcessor )
 pipes "tex"   = (["html","pdf"],  procTex  )
@@ -32,7 +36,9 @@ deps :: String -> DepCalculator
 deps "tex"    = texDeps 
 deps "latex"  = deps "tex"
 deps ""       = wikiDeps
-deps _        = const . return . (:[]) . FileDep
+deps _        = const . return . (:[]) . fileDep
+
+anyDep wi file = putStrLn ("Dependencying "++ file) >> deps (snd (splitWikiPath file)) file wi
 
 actions file = do 
 	let  (basename, ext) = splitWikiPath file
@@ -40,18 +46,18 @@ actions file = do
 	     (exts, action)  = pipes ext
 	     act             = (action file, map withExt exts)
 	     sitemapEntry    = (basename, ext, exts)
-             myDeps          =  deps ext file
-        return $ (sitemapEntry, (act, myDeps))
+--             myDeps          =  deps ext file
+        return $ (sitemapEntry, (act, file))
 
 -- file1 depends upon file2
 -- Todo, only when new files are there. Probably hard
-needsUpdate putStrLn file1 FileList          = do
+needsUpdate putStrLn file1 (Special FileList) = do
 	putStrLn $ "  "++file1++" updated because of possible new files"
 	return True 
-needsUpdate putStrLn file1 RepositoryChanges = do
+needsUpdate putStrLn file1 (Special RepositoryChanges) = do
 	putStrLn $ "  "++file1++" updated because of Repositorychanges"
 	return True 
-needsUpdate putStrLn file1 (FileDep file2)   = do 
+needsUpdate putStrLn file1 (Dep file2)   = do 
 	ex <- doesFileExist file1
 	ex2 <- doesFileExist file2
 	needs_update <-
@@ -115,6 +121,7 @@ main = do
   (sm, todo'') <- unzip `liftM` mapM actions inputfiles
   putStrLn $ (show $ length sm) ++ " base files."
 
+
   putStr "Generating Recent Changes.."
   rc <- if "-n" `notElem` opts then getSVNRecentChanges repos else return []
   putStrLn "Done."
@@ -122,7 +129,8 @@ main = do
   let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc}
 
   putStr "Getting Dependencies..."
-  todo' <- mapM ( \(act,dep) -> dep wi >>= return.((,) act) ) todo'' 
+  depMap <- genDepMap (map snd todo'') (anyDep wi) 
+  let todo' = map ( \(act,file) -> (act, depMap ! file)) todo'' 
   putStrLn "Done."
 
   putStrLn "Checking for up-to-dateness..."

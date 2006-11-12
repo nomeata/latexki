@@ -50,7 +50,7 @@ findSimpleCommands (_:rest)                 									= findSimpleCommands rest
 
 depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
 		("usepackage",[".sty"]), ("includegraphics",["",".png"] ) ]
-texDeps tex wi = liftM (map FileDep) $ texDeps' tex wi
+texDeps tex wi = liftM (map fileDep) $ texDeps' tex wi
 texDeps' tex wi = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'

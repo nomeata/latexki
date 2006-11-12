@@ -16,9 +16,9 @@ import WikiData
 wikiDeps wiki wi = do
 	content <- readFile wiki
 	let lc = map toLower content
-	let sitemap = if "!!sitemap!!"       `subListOf` lc then Just FileList          else Nothing
-	let repch   = if "!!recentchanges!!" `subListOf` lc then Just RepositoryChanges else Nothing
-	return $ FileDep wiki : catMaybes [sitemap,repch]
+	let sitemap = if "!!sitemap!!"       `subListOf` lc then Just fileList          else Nothing
+	let repch   = if "!!recentchanges!!" `subListOf` lc then Just repositoryChanges else Nothing
+	return $ fileDep wiki : catMaybes [sitemap,repch]
 
 procWiki wiki wi = do
 	content <- readFile wiki

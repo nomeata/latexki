@@ -1,5 +1,6 @@
 module Common (
-	Dependency(FileDep,FileList,RepositoryChanges),
+	SpecialDependency(FileList,RepositoryChanges),
+	fileDep, fileList, repositoryChanges,
 
 	FileProcessor,
 	DepCalculator,
@@ -43,15 +44,21 @@ import Maybe
 import Monad
 import List
 
+import DepMapT
+
 import WikiData
 
 import System.Directory
 
 -- Dependency Datatype
-data Dependency = FileDep FilePath | FileList | RepositoryChanges
+data SpecialDependency = FileList | RepositoryChanges deriving (Eq, Ord)
+
+fileList = Special FileList
+repositoryChanges = Special RepositoryChanges
+fileDep  = Dep
 
 type FileProcessor = FilePath -> WikiInfo -> IO ()
-type DepCalculator = FilePath -> WikiInfo -> IO [Dependency]
+type DepCalculator = FilePath -> WikiInfo -> IO [Dependency FilePath SpecialDependency]
 
 
 type PageName = String
