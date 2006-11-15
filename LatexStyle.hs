@@ -60,7 +60,7 @@ latexFile wi title basename body =
 	      stylefile = backDir basename ++ "latexki-style.css"
 -}
 
-escapes = [('\\',"\\textbackslash{}"),('&',"\\&"),('%',"\\%"),('#',"\\#"),('$',"\\$"),('^',"\\^"),('_',"\\_") ]
+escapes = [('\\',"\\textbackslash{}"),('&',"\\&"),('%',"\\%"),('#',"\\#"),('$',"\\$"),('_',"\\_") ]
 escape ""    = ""
 escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
 
