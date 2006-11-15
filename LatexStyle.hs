@@ -31,7 +31,9 @@ latexFile wi title basename body =
   "\\usepackage[T1]{fontenc}\n"++
   "\\usepackage{hyperref}\n"++
   "\\usepackage{graphicx}\n"++
-  "\\DeclareUnicodeCharacter{2190}{$\\leftarrow$}"++ -- really needed?
+  "\\usepackage{textcomp}\n"++
+  "\\DeclareUnicodeCharacter{2190}{\\textleftarrow}"++ -- really needed?
+  "\\DeclareUnicodeCharacter{2192}{\\textrightarrow}"++ -- really needed?
   "\\hypersetup{pdfpagemode=None,pdftitle="++title++",pdfpagelayout=OneColumn,pdfstartview=FitH,pdfview=FitH}"++
   "\\title{"++(escape title)++"}\n"++
   "\\begin{document}"++ (concatMap render body) ++ "\\end{document}"
@@ -60,7 +62,17 @@ latexFile wi title basename body =
 	      stylefile = backDir basename ++ "latexki-style.css"
 -}
 
-escapes = [('\\',"\\textbackslash{}"),('&',"\\&"),('%',"\\%"),('#',"\\#"),('$',"\\$"),('_',"\\_") ]
+escapes = [	('\\',"\\textbackslash{}"),
+		('&',"\\&{}"),
+		('%',"\\%{}"),
+		('#',"\\#{}"),
+		('$',"\\${}"),
+		('^',"\\textasciicircum{}"),
+		('_',"\\_{}"),
+		('~',"\\textasciitilde{}"),
+		('{',"\\{{}"),
+		('}',"\\}{}")
+	]
 escape ""    = ""
 escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
 
@@ -73,11 +85,11 @@ render (EnumList  items) = env "enumerate" (concatMap (("\\item "++).(concatMap 
 render (ItemList  items) = env "itemize"   (concatMap (("\\item "++).(concatMap renderInline)) items)
 render (PreFormat str)   = env "verbatim"  (str)
 render (HLine)           = "\n\\hrule\n"
-render (Header 1 text) = "\\section*{"++ (escape text) ++"}"
-render (Header 2 text) = "\\subsection*{"++ (escape text) ++"}"
-render (Header 3 text) = "\\subsubsection*{"++ (escape text) ++"}"
-render (Header 4 text) = "\\paragraph{"++ (escape text) ++"}"
-render (Header _ text) = "\\textbf{"++ (escape text) ++"}"
+render (Header 1 text) = "\\section*{"++       escape text ++"}"
+render (Header 2 text) = "\\subsection*{"++    escape text ++"}"
+render (Header 3 text) = "\\subsubsection*{"++ escape text ++"}"
+render (Header 4 text) = "\\paragraph{"++      escape text ++"}"
+render (Header _ text) = "\\textbf{"++         escape text ++"}"
 render (RCElem [])     = ""
 render (RCElem changes)  = env "enumerate" $ concatMap formatChange changes
   where	formatChange entry = ("\\item "++) $ env "description" $
