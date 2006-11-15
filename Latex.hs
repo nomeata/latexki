@@ -128,7 +128,8 @@ procTex tex wi = do
 	
 	let runit c a = do
 		let output = realbasename ++ ".output"
-		appendFile output $ "\nRunning "++c++" "++(concat (intersperse " " a))++":\n"
+		appendFile output $ "\nRunning "++c++" "++(concat (intersperse " " a))++
+				    " in an env with "++(show (length env))++" entries:\n"
   		readNull <- openFile "/dev/null" ReadMode
 	  	writeLog <- openFile (realbasename  ++ ".output") AppendMode
 		err <- runProcess c a Nothing (Just env) (Just readNull) (Just writeLog) (Just writeLog) >>=
@@ -144,16 +145,16 @@ procTex tex wi = do
 	usesPST' <- usesPST realsource wi
 	let pstqueue = if usesPST'
 			then [
-				runit "latex" [ realsource ],
-				runit "dvips" [ (realbasename ++ ".dvi") , "-o", (realbasename ++ "-pics.ps") ],
-				runit "ps2pdf" [ (realbasename ++ "-pics.ps") ]
+				runit "/usr/bin/latex" [ realsource ],
+				runit "/usr/bin/dvips" [ (realbasename ++ ".dvi") , "-o", (realbasename ++ "-pics.ps") ],
+				runit "/usr/bin/ps2pdf" [ (realbasename ++ "-pics.ps") ]
 	        	]
 			else []
 	
 	usesIndex' <- usesIndex realsource wi
 	let indexqueue = if usesIndex'
 			then [
-				runit "makeindex" [ (realbasename ++ ".idx") ]
+				runit "/usr/bin/makeindex" [ (realbasename ++ ".idx") ]
 			]
 			else []
 	
