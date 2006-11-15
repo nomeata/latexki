@@ -127,10 +127,20 @@ procTex tex wi = do
 	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
 	
 	let runit c a = do
-  		readNull <- return.Just =<< openFile "/dev/null" ReadMode
-	  	writeLog <- return.Just =<< openFile (realbasename  ++ ".output") WriteMode
-		runProcess c a Nothing (Just env) readNull writeLog writeLog >>= waitForProcess
-	
+		let output = realbasename ++ ".output"
+		appendFile output $ "\nRunning "++c++" "++(concat (intersperse " " a))++":\n"
+  		readNull <- openFile "/dev/null" ReadMode
+	  	writeLog <- openFile (realbasename  ++ ".output") AppendMode
+		err <- runProcess c a Nothing (Just env) (Just readNull) (Just writeLog) (Just writeLog) >>=
+			waitForProcess
+		appendFile output $ "Result: "++(show err)++"\n"
+		return err
+
+
+	let clearOutput = do
+		safeRemoveFile $ realbasename ++ ".output"
+		return ExitSuccess
+
 	usesPST' <- usesPST realsource wi
 	let pstqueue = if usesPST'
 			then [
@@ -147,7 +157,13 @@ procTex tex wi = do
 			]
 			else []
 	
-	return $ pstqueue ++ [(runit "/usr/bin/pdflatex" [realsource])] ++ indexqueue ++ replicate 2 (runit "/usr/bin/pdflatex" [realsource])
+	let latexrun = 		runit "/usr/bin/pdflatex" [realsource]
+	
+	return $[clearOutput] ++
+		pstqueue ++
+		[latexrun] ++
+		indexqueue ++
+		replicate 2 latexrun
 
 
 
