@@ -71,13 +71,15 @@ parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi
 		 | not (null space)      = Text space                  : parseInline wi srest
 		 | not (null word)       = Text word                   : parseInline wi wrest
 		 | isBrokenLink          = Text [head t]               : parseInline wi (tail t)
+		 | isBrokenBlock         = Text [head t]               : parseInline wi (tail t)
 		 | otherwise             = error $ "Unhandled case in parseInline: "++t
   where	(link, lrest)     = span (not . (== ']')) (tail t)
   	(word, wrest)     = span isAlphaNum t
   	(skword, skrest)  = span isAlphaNum (tail t) -- skip !
   	(space, srest)    = span isNormalNonWord t
-  	isNormalNonWord c = not (isAlphaNum c) && not (c == '[')
+  	isNormalNonWord c = not (isAlphaNum c) && not (c `elem` "[!")
 	isBlockedLink     = head t == '!'  && isCamelCase skword
+	isBrokenBlock	  = "!" `isPrefixOf` t && not isBlockedLink
 	isBrokenLink	  = "[" `isPrefixOf` t && not isBracketLink
 	isBracketLink     = "[" `isPrefixOf`t  && not (null lrest) && isValidPagename link 
 
