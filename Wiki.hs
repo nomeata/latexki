@@ -65,16 +65,19 @@ parseLines wi cond markup mapF lines	| null list = error "Did not find what I sh
 	where (list,rest) = span cond lines
 
 parseInline wi [] = []
-parseInline wi t | isCamelCase word      = LinkElem (mkLink wi word) : parseInline wi wrest 
-                 | isBracketLink         = LinkElem (mkLink wi link) : parseInline wi (tail lrest)
-		 | not (null space)      = Text space                : parseInline wi srest
-		 | not (null word)       = Text word                 : parseInline wi wrest
-		 | isBrokenLink          = Text [head t]             : parseInline wi (tail t)
+parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi skrest
+		 | isCamelCase word      = LinkElem (mkLink wi word)   : parseInline wi wrest 
+                 | isBracketLink         = LinkElem (mkLink wi link)   : parseInline wi (tail lrest)
+		 | not (null space)      = Text space                  : parseInline wi srest
+		 | not (null word)       = Text word                   : parseInline wi wrest
+		 | isBrokenLink          = Text [head t]               : parseInline wi (tail t)
 		 | otherwise             = error $ "Unhandled case in parseInline: "++t
   where	(link, lrest)     = span (not . (== ']')) (tail t)
   	(word, wrest)     = span isAlphaNum t
+  	(skword, skrest)  = span isAlphaNum (tail t) -- skip !
   	(space, srest)    = span isNormalNonWord t
   	isNormalNonWord c = not (isAlphaNum c) && not (c == '[')
+	isBlockedLink     = head t == '!'  && isCamelCase skword
 	isBrokenLink	  = "[" `isPrefixOf` t && not isBracketLink
 	isBracketLink     = "[" `isPrefixOf`t  && not (null lrest) && isValidPagename link 
 
