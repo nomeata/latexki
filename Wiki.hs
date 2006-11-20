@@ -68,6 +68,8 @@ parseInline wi [] = []
 parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi skrest
 		 | isCamelCase word      = LinkElem (mkLink wi word)   : parseInline wi wrest 
                  | isBracketLink         = LinkElem (mkLink wi link)   : parseInline wi (tail lrest)
+		 | isWebLink		 = LinkElem (PlainLink wlink wlink) :
+		 							 parseInline wi wlrest
 		 | not (null space)      = Text space                  : parseInline wi srest
 		 | not (null word)       = Text word                   : parseInline wi wrest
 		 | isBrokenLink          = Text [head t]               : parseInline wi (tail t)
@@ -77,11 +79,14 @@ parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi
   	(word, wrest)     = span isAlphaNum t
   	(skword, skrest)  = span isAlphaNum (tail t) -- skip !
   	(space, srest)    = span isNormalNonWord t
+	(wlink, wlrest)   = span isWebLinkChar t
   	isNormalNonWord c = not (isAlphaNum c) && not (c `elem` "[!")
 	isBlockedLink     = head t == '!'  && isCamelCase skword
 	isBrokenBlock	  = "!" `isPrefixOf` t && not isBlockedLink
 	isBrokenLink	  = "[" `isPrefixOf` t && not isBracketLink
 	isBracketLink     = "[" `isPrefixOf`t  && not (null lrest) && isValidPagename link 
+	isWebLink         = "http://" `isPrefixOf` t
+	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_." -- more to add?
 
 
 isCamelCase []      = False
