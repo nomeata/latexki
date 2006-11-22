@@ -50,9 +50,9 @@ isHLine l = length l >= 4 && all (`elem` "=-_") l
 isParaLine l = not (isListLine l) && not (isPreLine l) && not (null l) &&
                not (fst (parseHeader l) > 0) && not (isSpecialLine l)
 
-parseList wi = parseLines wi isListLine  ItemList             (parseInline wi . tail)
-parsePre  wi = parseLines wi isPreLine  (PreFormat . unlines)  tail
-parsePara wi = parseLines wi isParaLine (Paragraph . concat)  (parseInline wi)
+parseList wi = parseLines wi isListLine  ItemList  (parseInline wi . tail)
+parsePre  wi = parseLines wi isPreLine  (PreFormat . unlines) tail
+parsePara wi = parseLines wi isParaLine (Paragraph . concatMap (++[Text " "])) (parseInline wi)
 
 parseLines :: forall t . WikiInfo 
               -> (String -> Bool)
@@ -81,12 +81,12 @@ parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi
   	(space, srest)    = span isNormalNonWord t
 	(wlink, wlrest)   = span isWebLinkChar t
   	isNormalNonWord c = not (isAlphaNum c) && not (c `elem` "[!")
-	isBlockedLink     = head t == '!'  && isCamelCase skword
+	isBlockedLink     = head t == '!' && isCamelCase skword
 	isBrokenBlock	  = "!" `isPrefixOf` t && not isBlockedLink
 	isBrokenLink	  = "[" `isPrefixOf` t && not isBracketLink
 	isBracketLink     = "[" `isPrefixOf`t  && not (null lrest) && isValidPagename link 
 	isWebLink         = "http://" `isPrefixOf` t
-	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_." -- more to add?
+	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_.-~" -- more to add?
 
 
 isCamelCase []      = False
@@ -112,5 +112,4 @@ parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date li
 encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
 takeout  sub    = (drop (length sub)).reverse.(drop (length sub)).reverse
 (\/) pre post str = pre ++ str ++ post
-
 
