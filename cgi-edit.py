@@ -60,6 +60,7 @@ def main ():
 		conf_rev = None
 		done = False
 		log = ''
+		human = 'No'
 
 		if 'basename' in form:
 			basename = form['basename']
@@ -94,34 +95,37 @@ def main ():
 
 		if 'content' in form:
 			assert 'comment' in form, "Commit comment is compulsory"
+			assert 'human' in form, "Human answer is compulsory"
 			log = form['comment']
-			new_content = form['content'].replace('\r\n','\n') # is this an HACK?
-			file(filename,'w').write(new_content.encode('utf8'))
-			if new:
-				add()
-				(error,new_rev) = commit(log)
-				if not error:
-					done = True
+			human = form['human']
+			if human[0] not in "jJyY":
+				error = "Sorry, but you claim you are not human"
 			else:
-				if 'conf_rev' in form:
-					if 'checked_conflict' in form:
-						new_rev = update(form['conf_rev'])
-						assert conflict(), "This should be a conflict, strange..."
-						file(filename,'w').write(new_content.encode('utf8'))
-						resolve()
-					else:
-						error = "Please do resolve your conflict"
-
-				new_rev = update()
-				if conflict():
-					conf_rev = new_rev
-				else:
+				new_content = form['content'].replace('\r\n','\n') # is this an HACK?
+				file(filename,'w').write(new_content.encode('utf8'))
+				if new:
+					add()
 					(error,new_rev) = commit(log)
 					if not error:
 						done = True
-		
-		# do SVN stuff here
+				else:
+					if 'conf_rev' in form:
+						if 'checked_conflict' in form:
+							new_rev = update(form['conf_rev'])
+							assert conflict(), "This should be a conflict, strange..."
+							file(filename,'w').write(new_content.encode('utf8'))
+							resolve()
+						else:
+							error = "Please do resolve your conflict"
 
+					new_rev = update()
+					if conflict():
+						conf_rev = new_rev
+					else:
+						(error,new_rev) = commit(log)
+						if not error:
+							done = True
+			
 		if filename and not new:
 			content = file(filename,'r').read().decode('utf8')
 		else:
@@ -131,7 +135,7 @@ def main ():
 		if done:
 			print_success(new, basename, ext, new_rev)
 		else:
-			print_page(new, basename, ext, content, log, old_rev, conf_rev, error)
+			print_page(new, basename, ext, content, log, human, old_rev, conf_rev, error)
 
 	finally:
 		os.chdir("/")
@@ -192,7 +196,7 @@ def print_headers():
 	print "Content-type: text/html"
 	print
 
-def print_page(new, basename, ext, content, log, rev, conf_rev, error):
+def print_page(new, basename, ext, content, log, human, rev, conf_rev, error):
 	if new:
 		if basename:
 			title = u"Creating new page “%s”" % basename
@@ -237,13 +241,16 @@ def print_page(new, basename, ext, content, log, rev, conf_rev, error):
 	<h3>Commit log entry</h3>
 	Please describe your changes. This is mandatory.<br/>
 	<input type="text" name="comment" size="80" value="%(comment)s"/>
+	<h3>Are you human?</h3>
+	Sorry for the inconvenience. This is mandatory, to prevent spam.<br/>
+	<input type="text" name="human" size="80" value="%(human)s"/>
 	<h3>Commit changes</h3>
 	<input type="hidden" name="_charset_"/>
 	%(conftext)s
 	<button type="submit">Commit changes
 	</button> (can take a while, please be patient)
 	</form>''' % { 'pageform':pageform, 'content': esc(content), 'self_uri':esc(self_uri),
-	               'conftext':conftext, 'rev':rev, 'comment':esc(log)}
+	               'conftext':conftext, 'rev':rev, 'comment':esc(log), 'human':esc(human)}
 	print (u'''
 <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
 <html>
