@@ -22,7 +22,7 @@ import DepMapT
 import Data.Map ((!))
 
 pipes :: String -> ( [String], FileProcessor )
-pipes "tex"   = (["html","pdf"],  procTex  )
+pipes "tex"   = (["html","pdf","png"],  procTex  )
 pipes "latex" = pipes "tex"
 pipes ""      = (["html","pdf"], procWiki    )
 pipes "css"   = (["html","css"], procCopyGen ) 

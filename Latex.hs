@@ -159,12 +159,15 @@ procTex tex wi = do
 			else []
 	
 	let latexrun = 		runit "/usr/bin/pdflatex" [realsource]
+
+	let pngrun =		runit "/usr/bin/convert" [ "-verbose", realbasename++".pdf[0]", realbasename++".png" ] 
 	
 	return $[clearOutput] ++
 		pstqueue ++
 		[latexrun] ++
 		indexqueue ++
-		replicate 2 latexrun
+		replicate 2 latexrun ++
+		[pngrun]
 
 
 
@@ -176,7 +179,9 @@ genHTML tex wi err = do
 			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
 			           [LinkElem (PlainLink logFile "Latex-Logfile")],
 			           [LinkElem (PlainLink outFile "Latex-Output")],
-			           [LinkElem (PlainLink texFile "Latex-Source")]]
+			           [LinkElem (PlainLink texFile "Latex-Source")]],
+			 Header 2 "Preview",
+			 Paragraph [Image pngFile "Preview"]
 			]
                 | otherwise          = 	
 			[Paragraph [Text ("File not successfully created ("++(show err)++"):")],
@@ -188,6 +193,7 @@ genHTML tex wi err = do
 	pdfFile = (pagename tex) ++ ".pdf"				      
 	logFile = (pagename tex) ++ ".log" 
 	outFile = (pagename tex) ++ ".output" 
+	pngFile = (pagename tex) ++ ".png"				      
 	texFile = (backDir tex) ++ tex
 	target  = (pagename tex) ++ ".html" 
 
