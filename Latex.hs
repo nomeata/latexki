@@ -174,25 +174,29 @@ procTex tex wi = do
 
 
 genHTML tex wi err = do 
-	index <- genContent tex wi
-	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index
+	index <- genIndex tex wi
+	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index ++ preview
  where  title = pagename tex
  	titleline = [Header 1 ("Latex File: "++ title)]
-        content | err == ExitSuccess = 
-			[Paragraph [Text "File successfully created:"],
+        content | err == ExitSuccess = [
+			 Paragraph [Text "File successfully created:"],
 			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
 			           [LinkElem (PlainLink logFile "Latex-Logfile")],
 			           [LinkElem (PlainLink outFile "Latex-Output")],
-			           [LinkElem (PlainLink texFile "Latex-Source")]],
-			 Header 2 "Preview",
-			 Paragraph [Image pngFile "Preview"]
+			           [LinkElem (PlainLink texFile "Latex-Source")]]
 			]
-                | otherwise          = 	
-			[Paragraph [Text ("File not successfully created ("++(show err)++"):")],
+                | otherwise          = [	
+			 Paragraph [Text ("File not successfully created ("++(show err)++"):")],
 			 ItemList [[Text "PDF-File (?)"],
 			           [LinkElem (PlainLink logFile "Latex-Logfile")],
 			           [LinkElem (PlainLink outFile "Latex-Output")],
 			           [LinkElem (PlainLink texFile "Latex-Source")]]
+			]
+        preview | err == ExitSuccess = [
+			 Header 2 "Preview",
+			 Paragraph [Image pngFile "Preview"]
+			]
+                | otherwise          = [
 			]
 	pdfFile = (pagename tex) ++ ".pdf"				      
 	logFile = (pagename tex) ++ ".log" 
@@ -202,13 +206,21 @@ genHTML tex wi err = do
 	target  = (pagename tex) ++ ".html" 
 
 
-genContent tex wi = return . (Header 2 "Index-Preview":) . format . find . extract .  zip [1..] . map uncomment . lines =<< readFile tex
-  where	extract = map (fmap extract_chapter)
+findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]
+findspans _      _       []   = []
+findspans anfang extract list = findspans' anfang list 1 0
+  where	findspans' current []     a b = [ ((a,b),current) ]
+        findspans' current (x:xs) a b = case extract x of
+		Just new -> ((a,b), current) : findspans' new     xs (b+1) (b+1)
+		Nothing  ->                    findspans' current xs  a    (b+1)
+
+genIndex tex wi = return . format . extract . map uncomment . lines =<< readFile tex
+  where	extract = findspans "Prelude" extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
 				                guard $ command =="chapter"
 				                return param
-	find = map (fmap fromJust) . filter (isJust.snd)
-	format = (:[]) . ItemList . map (\(n,t) -> [Text ( t++ " (line "++show n++")")] )
+	format = (Header 2 "Index-Preview":) . (:[]) . ItemList . map format'
+	  where format' ((a,b),t) = [Text (t++" "),LinkElem (PlainLink (editLinkLines (pagename tex) a b) "(bearbeiten)")]
 
 	
 	

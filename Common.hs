@@ -26,6 +26,7 @@ module Common (
 	dirTrail,
 	backDir,
 	editLink,
+	editLinkLines,
 	filename,
 	dirname,
 	safeChdir,
@@ -112,7 +113,9 @@ dirTrail' path = dirTrail' $ dropWhile (/='/')  path
 
 backDir path =  concat $ replicate (length $ filter (=='/') path) "../"
 
-editLink page = backDir page ++ "cgi/edit/" ++ page
+editLink      page         = backDir page ++ "cgi/edit/" ++ page
+editLinkLines page von bis = backDir page ++ "cgi/edit/" ++ page ++
+				"?lines=" ++ show von ++ "-" ++ show bis
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x

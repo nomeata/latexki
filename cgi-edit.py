@@ -109,6 +109,8 @@ def main ():
                 error = "Sorry, but you claim you are not human"
             else:
                 new_content = form['content'].replace('\r\n','\n') # is this an HACK?
+                if len(new_content) > 0 and new_content[-1] != '\n':
+                    new_content += '\n'
                 if line_from and line_to:
                     old_content  = file(filename,'r').read().decode('utf8')
                     pre_content  = ''.join(old_content.splitlines(True)[:line_from-1])
@@ -314,4 +316,4 @@ def ptype(ext):
 
 
 main()
-#vim:ts=4:sw=4:et
+#vim:ts=4:sw=4:expandtab:smarttab
