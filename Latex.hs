@@ -35,16 +35,18 @@ uncomment ('%':_)       = ""
 uncomment (c:line)      = c:uncomment line
 	
 findSimpleCommands ""                       					= []
-findSimpleCommands ('\\':rest1) | n == '{'      				= (command,param) :findSimpleCommands rest3
+findSimpleCommands ('\\':rest1) | null rest5					= [(command, "")]
+				| n == '{'      				= (command,param) :findSimpleCommands rest3
 				| n == '[' && (length rest3') > 2 && m == '{' 	= (command,param2):findSimpleCommands rest4
-                                | otherwise          				= (command,""):findSimpleCommands (n:rest2)
+                                | otherwise          				= (command,""):findSimpleCommands rest5
 --				| command == "printindex"			= ("printindex", ""):findSimpleCommands (n:rest2)
 --                              | otherwise 					= findSimpleCommands (n:rest2)
-	where (command,n:rest2) = span isAlpha rest1
+	where (command,rest5)	= span isAlpha rest1
+	      (n:rest2)		= rest5
 	      (param,rest3)     = span (/='}') rest2
 	      (_,rest3')        = span (/=']') rest2
 	      (_:m:rest3'')     = rest3'
-	      (param2,rest4)    = span (/='}') rest3'
+	      (param2,rest4)    = span (/='}') rest3''
 findSimpleCommands (_:rest)                 									= findSimpleCommands rest	      
 
 
@@ -172,8 +174,10 @@ procTex tex wi = do
 
 
 genHTML tex wi err = do 
-	writeFileSafe target $ htmlPage wi tex (pagename tex) $ title ++ content
- where  title = [Header 1 ("Latex File: "++tex)]
+	index <- genContent tex wi
+	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index
+ where  title = pagename tex
+ 	titleline = [Header 1 ("Latex File: "++ title)]
         content | err == ExitSuccess = 
 			[Paragraph [Text "File successfully created:"],
 			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
@@ -185,7 +189,7 @@ genHTML tex wi err = do
 			]
                 | otherwise          = 	
 			[Paragraph [Text ("File not successfully created ("++(show err)++"):")],
-			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File (?)")],
+			 ItemList [[Text "PDF-File (?)"],
 			           [LinkElem (PlainLink logFile "Latex-Logfile")],
 			           [LinkElem (PlainLink outFile "Latex-Output")],
 			           [LinkElem (PlainLink texFile "Latex-Source")]]
@@ -198,4 +202,14 @@ genHTML tex wi err = do
 	target  = (pagename tex) ++ ".html" 
 
 
+genContent tex wi = return . (Header 2 "Index-Preview":) . format . find . extract .  zip [1..] . map uncomment . lines =<< readFile tex
+  where	extract = map (fmap extract_chapter)
+  	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
+				                guard $ command =="chapter"
+				                return param
+	find = map (fmap fromJust) . filter (isJust.snd)
+	format = (:[]) . ItemList . map (\(n,t) -> [Text ( t++ " (line "++show n++")")] )
+
+	
+	
 
