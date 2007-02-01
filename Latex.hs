@@ -208,7 +208,7 @@ genHTML tex wi err = do
 
 findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]
 findspans _      _       []   = []
-findspans anfang extract list = findspans' anfang list 1 0
+findspans first extract list = findspans' first list 1 0
   where	findspans' current []     a b = [ ((a,b),current) ]
         findspans' current (x:xs) a b = case extract x of
 		Just new -> ((a,b), current) : findspans' new     xs (b+1) (b+1)
