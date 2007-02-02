@@ -105,10 +105,11 @@ renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link
 renderInline (Image src alt) = "\\includegraphics[width=\\linewidth]{"++ escape src ++"}"
 
-renderLink (Link base txt (ext:exts)) = aHref (with ext) (escape txt) ++ more
+renderLink (WikiLink base txt) = aHref (escape (base ++".html")) (escape txt) {-++ more
   where with ext          = escape (base ++"."++ ext)
  	more | null exts  = ""
              | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
+-}
 
 renderLink (NewLink base)       = aHref (escape (editLink base)) (escape (base ++ "(new)")) 
 renderLink (DLLink file)        = aHref (escape file)            (escape (file ++ "(download)")) 

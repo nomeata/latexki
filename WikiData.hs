@@ -7,7 +7,7 @@ data RawLogEntry = RawLogEntry { revisionR :: Int, authorR :: String, dateR :: S
 
 data LogEntry = LogEntry { revision :: Int, author :: String, date :: String, links :: [Link], message :: InlineText } 
 
-data Link = Link String String [String] | NewLink String | DLLink String | PlainLink String String
+data Link = WikiLink String String | NewLink String | DLLink String | PlainLink String String
 
 data InlineTextElem = Text String | LinkElem Link | Image String String
 

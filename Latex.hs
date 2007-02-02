@@ -204,15 +204,12 @@ genHTML tex wi err = do
 	pngFile = (pagename tex) ++ ".png"				      
 	texFile = (backDir tex) ++ tex
 	target  = (pagename tex) ++ ".html" 
-
-
 findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]
 findspans _      _       []   = []
-findspans first extract list = findspans' first list 1 0
-  where	findspans' current []     a b = [ ((a,b),current) ]
-        findspans' current (x:xs) a b = case extract x of
-		Just new -> ((a,b), current) : findspans' new     xs (b+1) (b+1)
-		Nothing  ->                    findspans' current xs  a    (b+1)
+findspans first extract list = findspans' first (map extract list) 1 0
+  where	findspans' current []            a b = [((a,b), current)]
+        findspans' current (Just new:xs) a b =  ((a,b), current) : findspans' new     xs (b+1) (b+1)
+        findspans' current (Nothing :xs) a b =                     findspans' current xs  a    (b+1)
 
 genIndex tex wi = return . format . extract . map uncomment . lines =<< readFile tex
   where	extract = findspans "Preamble" extract_chapter 

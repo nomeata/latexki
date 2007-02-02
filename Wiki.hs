@@ -92,9 +92,8 @@ parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi
 isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord) && all isAscii (w:ord)
 
-mkLink wi a | a `elem` pagenames wi = Link a a exts
+mkLink wi a | a `elem` pagenames wi = WikiLink a a
             | otherwise             = NewLink a
- where exts = triple3 $ head $ filter ((==a).triple1) (sitemap wi)
 
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "_-/" ) 
 

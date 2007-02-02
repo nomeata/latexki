@@ -30,8 +30,10 @@ htmlPage wi title basename body =
   )))
 	where li (t,l) = tag "li" $ aHref l $ t
 	      addmenuconf = fromMaybe "" . lookup "addmenu" . wikiConfig  $ wi
-	      addmenu =  map (\f -> (f,"./"++f++".html") ) $ words addmenuconf
+	      addmenu =  (map (\f -> (f,"./"++f++".html") ) $ words addmenuconf) ++
+	                 (map (\e -> ("View as "++e,"./"++basename++"."++e)) $ exts basename)
 	      stylefile = backDir basename ++ "latexki-style.css"
+	      exts basename = triple3 $ head $ filter ((==basename).triple1) (sitemap wi)
 
 tagP name params body | null body = "<"++name++par++"/>"
                       | otherwise = "<"++name++par++">"++body++"</"++name++">"
@@ -67,10 +69,11 @@ renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link
 renderInline (Image src alt) = tagP "img" [("src",escape src),("alt",escape alt)] ""
 
-renderLink (Link base txt (ext:exts)) = aHref (with ext) (escape txt) ++ more
+renderLink (WikiLink base txt) = aHref (escape (base ++".html")) (escape txt) {- ++ more
   where with ext          = escape (base ++"."++ ext)
  	more | null exts  = ""
              | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
+   -}
 
 renderLink (NewLink base)       = aHref (escape (editLink base)) (escape (base ++ "(new)")) 
 renderLink (DLLink file)        = aHref (escape file)            (escape (file ++ "(download)")) 
