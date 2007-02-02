@@ -215,7 +215,7 @@ findspans first extract list = findspans' first list 1 0
 		Nothing  ->                    findspans' current xs  a    (b+1)
 
 genIndex tex wi = return . format . extract . map uncomment . lines =<< readFile tex
-  where	extract = findspans "Prelude" extract_chapter 
+  where	extract = findspans "Preamble" extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
 				                guard $ command =="chapter"
 				                return param
