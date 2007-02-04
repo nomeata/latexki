@@ -1,6 +1,6 @@
 {-
 
- Latexki © 2006 Joachim Breitner
+ Latexki © 2006, 2007 Joachim Breitner
 
 -}
 
