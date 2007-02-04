@@ -20,8 +20,8 @@ writeLatexPage wi file title basename body = do
   err <- runProcess "pdflatex" [(filename file)++".tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
   setCurrentDirectory cwd
   case err of
-	ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> safeRemoveFile  (file ++ ".pdf")
-	ExitSuccess   -> putStr "ok"
+	ExitFailure _ -> putStrLn (pagename file ++ ": LaTeX failed ("++show err ++")")
+	ExitSuccess   -> return ()
   
 
 

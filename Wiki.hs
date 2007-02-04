@@ -1,30 +1,37 @@
 {-# OPTIONS -fglasgow-exts #-}
 
-module Wiki (wikiDeps, procWiki) where
+module Wiki (procWiki) where
 
 
 import FilePath
 import List
 import Char
+import Data.Monoid
+import Monad
 import Maybe
 
 import Common
 import HtmlStyle
 import LatexStyle
 import WikiData
+import Dependencies
 
-wikiDeps wiki wi = do
-	content <- readFile wiki
-	let lc = map toLower content
-	let sitemap = if "!!sitemap!!"       `subListOf` lc then Just fileList          else Nothing
-	let repch   = if "!!recentchanges!!" `subListOf` lc then Just repositoryChanges else Nothing
-	return $ fileDep wiki : catMaybes [sitemap,repch]
+alwaysUpdate text = mappend (if "!!sitemap!!" `subListOf` lc       then Always "Sitemap"       else UpToDate)
+                            (if "!!recentchanges!!" `subListOf` lc then Always "RecentChanges" else UpToDate)
+  where	lc = map toLower text
 
 procWiki wiki wi = do
-	content <- readFile wiki
-	let parsed  = parse wi $ map stripWhitespace $ lines  content
-	writeHtmlPage wi (pagename wiki ++ ".html") (pagename wiki) (pagename wiki) parsed 
-	writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki)  parsed
+	let htmlFile = pagename wiki ++ ".html"
+	let pdfFile = pagename wiki ++ ".pdf"
+	content <- liftIO $ readFile wiki
+	depRes <- liftIO $ mappend (alwaysUpdate content) `fmap` needUpdate htmlFile [wiki]
+	let up2date = isUpToDate depRes
+	liftIO $ showState (pagename wiki) depRes
+	let parsed  = parse wi $ map stripWhitespace $ lines content
+	unless up2date $ liftIO $ writeHtmlPage wi htmlFile (pagename wiki) (pagename wiki) parsed
+	producedFile htmlFile
+	unless up2date $ liftIO $ writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki) parsed
+	producedFile pdfFile
 
 stripWhitespace = reverse.(dropWhile (==' ')).reverse
 

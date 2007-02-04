@@ -17,7 +17,6 @@ import Latex
 import Generic
 import ImageFile
 import SVN
-import DepMapT
 
 import Data.Map ((!))
 
@@ -31,48 +30,18 @@ pipes "jpg"   = (["html","pdf"], procImage )
 pipes "eps"   = (["html"], procGeneric (Just True))
 pipes _       = (["html"], procGeneric Nothing) 
 
-deps :: String -> DepCalculator
-deps "tex"    = texDeps 
-deps "latex"  = deps "tex"
-deps ""       = wikiDeps
-deps _        = const . return . (:[]) . fileDep
-
-anyDep wi file = deps (snd (splitWikiPath file)) file wi
-
 actions file = do 
-	let  (basename, ext) = splitWikiPath file
-	     withExt e       = basename++"."++e
-	     (exts, action)  = pipes ext
-	     act             = (action file, map withExt exts)
-	     sitemapEntry    = (basename, ext, exts)
---             myDeps          =  deps ext file
-        return $ (sitemapEntry, (act, file))
+	let  (basename, ext)  = splitWikiPath file
+	     withExt e        = basename++"."++e
+	     (exts, producer) = pipes ext
+	     sitemapEntry     = (basename, ext, exts)
+        return $ (sitemapEntry, producer file)
 
--- file1 depends upon file2
--- Todo, only when new files are there. Probably hard
-needsUpdate putStrLn file1 (Special FileList) = do
-	putStrLn $ "  "++file1++" updated because of possible new files"
-	return True 
-needsUpdate putStrLn file1 (Special RepositoryChanges) = do
-	putStrLn $ "  "++file1++" updated because of Repositorychanges"
-	return True 
-needsUpdate putStrLn file1 (Dep file2)   = do 
-	ex <- doesFileExist file1
-	ex2 <- doesFileExist file2
-	needs_update <-
-	  if not ex2 then do
-		putStrLn $ "WARNING: Dependency "++file2++" does not exist"
-		return False
-	  else if ex then do
-		date1 <- getModificationTime file1
-		date2 <- getModificationTime file2
-		return $ date1 < date2
-	    else return True
-	when needs_update $ putStrLn $ "  "++file1++" update because of "++file2
-	return needs_update
 
+{-
 anyM  cond list = mapM cond list >>= return.or
 anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >>= return.or
+-}
 
 readConfig = do 
 	exists <- doesFileExist file
@@ -89,7 +58,7 @@ readConfig = do
 		
 
 main = do
-  (opts, [repos, outdir]) <- partition ("-" `isPrefixOf`) `liftM` getArgs
+  (opts, [repos, outdir]) <- partition ("-" `isPrefixOf`) `fmap` getArgs
   exists <- doesDirectoryExist outdir
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
   setCurrentDirectory outdir
@@ -109,15 +78,14 @@ main = do
 	                                  else return ()
               else                             coSVN repos
 
-  inputfiles <- (filter (not . isPrefixOf (drop 2 datadir) . pagename) . sort) `liftM` recursiveFiles datadir
-  --inputfiles <- (filter (not.null.basename) . sort) `liftM` recursiveFiles datadir
+  inputfiles <- (filter (not . isPrefixOf (drop 2 datadir) . pagename) . sort) `fmap` recursiveFiles datadir
 
   putStr "Reading Configuration..."
   config <- readConfig
   putStrLn "done."
 
   putStr "Generating Sitemap..."
-  (sm, todo'') <- unzip `liftM` mapM actions inputfiles
+  (sm, todo) <- unzip `fmap` mapM actions inputfiles
   putStrLn $ (show $ length sm) ++ " base files."
 
 
@@ -126,23 +94,16 @@ main = do
   putStrLn "Done."
   
   let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc}
+  
+  -- This is where all the action happens
+  producedFiles <- runFileProducers $ map ($wi) todo
 
-  putStr "Getting Dependencies..."
-  depMap <- genDepMap (map snd todo'') (anyDep wi) 
-  let todo' = map ( \(act,file) -> (act, depMap ! file)) todo'' 
-  putStrLn "Done."
-
-  putStrLn "Checking for up-to-dateness..."
-  todo <- filterM (\((_,t),d) -> anyM2 (needsUpdate putStrLn) t d) todo' >>= return.(map fst)
-  putStrLn $ (show $ length todo)++" left to do."
-
-  putStrLn "Generating files... "
-  mapM_ (\(a,f) -> putStr ((concat(intersperse ", " f))++"...") >> a wi >> putStrLn ".") todo
-  putStrLn "Done."
+  --putStrLn $ "Produced: "++show producedFiles
 
   putStrLn "Cleaning up..."
   foundOutputs <- recursiveFiles "./"
-  let expectedOutputs = map ("./"++) $ outputs wi
+  let --expectedOutputs = map ("./"++) $ outputs wi
+      expectedOutputs = map ("./"++) producedFiles
       systemFiles = [logfilename]
       putStrExts   = [".log",".output"]
       delete =  filter (\f -> not $ any (\e -> e `isSuffixOf` f) putStrExts) $

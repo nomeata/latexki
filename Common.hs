@@ -1,9 +1,11 @@
 module Common (
-	SpecialDependency(FileList,RepositoryChanges),
-	fileDep, fileList, repositoryChanges,
-
+	FileProducer,
+	runFileProducer,
+	runFileProducers,
+	producedFile,
+	producedFiles,
+	liftIO,
 	FileProcessor,
-	DepCalculator,
 
 	WikiInfo(WikiInfo),
 	sitemap,
@@ -40,40 +42,45 @@ module Common (
 	subListOf,
 ) where
 
-import qualified FilePath as FP
 import Maybe
 import Monad
 import List
+import System.Directory
+import Control.Monad.Writer
 
-import DepMapT
+import qualified FilePath as FP
 
 import WikiData
 
-import System.Directory
+-- File Processor Datatype
+type FileProducer = WriterT [FilePath] IO ()
+type FileProcessor = FilePath -> WikiInfo -> FileProducer
 
--- Dependency Datatype
-data SpecialDependency = FileList | RepositoryChanges deriving (Eq, Ord)
+runFileProducer :: FileProducer -> IO [FilePath]
+runFileProducer = execWriterT
 
-fileList = Special FileList
-repositoryChanges = Special RepositoryChanges
-fileDep  = Dep
+runFileProducers :: [FileProducer] -> IO [FilePath]
+runFileProducers = fmap concat . mapM runFileProducer
 
-type FileProcessor = FilePath -> WikiInfo -> IO ()
-type DepCalculator = FilePath -> WikiInfo -> IO [Dependency FilePath SpecialDependency]
+producedFiles :: [FilePath] -> FileProducer
+producedFiles = tell
+
+producedFile :: FilePath -> FileProducer
+producedFile = producedFiles . (:[])
 
 
 type PageName = String
 
--- Data type
+-- General Info Data type
 data WikiInfo = WikiInfo {	sitemap :: [(PageName, String, [String]) ],
 				wikiConfig :: [(String,String)],
 				recentChanges :: RawRecentChanges
 			}
-mainTitle = (fromMaybe "A Wiki").(lookup "title").wikiConfig
+mainTitle = fromMaybe "A Wiki" . lookup "title" . wikiConfig
 
-pagenames wi = map triple1 (sitemap wi)
+pagenames = map triple1 . sitemap
 
-outputs wi = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) (sitemap wi)
+outputs = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) . sitemap
 
 logfilename = "./latexki-run.log"
 datadir     = "./data/"

@@ -1,4 +1,4 @@
-module Latex ( procTex, texDeps ) where
+module Latex ( procTex ) where
 
 import Maybe
 import Monad
@@ -12,6 +12,7 @@ import List
 import WikiData
 import Common
 import HtmlStyle
+import Dependencies
 
 replicateCmd 0 cmd = return ExitSuccess
 replicateCmd n cmd = do
@@ -52,8 +53,7 @@ findSimpleCommands (_:rest)                 									= findSimpleCommands rest
 
 depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
 		("usepackage",[".sty"]), ("includegraphics",["",".png"] ) ]
-texDeps tex wi = liftM (map fileDep) $ texDeps' tex wi
-texDeps' tex wi = do
+findDeps tex = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	    commands = findSimpleCommands file
@@ -61,7 +61,7 @@ texDeps' tex wi = do
 	  			        		Just exts -> Just $ (f,exts)
 							Nothing -> Nothing          ) commands
 	files <- liftM (filter (/=tex).catMaybes) $ mapM find candits
-	additional <- liftM (nub.sort.concat) $ mapM (\d -> texDeps' d wi) files
+	additional <- liftM (nub.sort.concat) $ mapM findDeps files
 	return (tex:additional)
  where  addpath = map ((dirname tex++"/") ++ )
 	find (candit,exts) = liftM listToMaybe $ filterM (doesFileExist) [ 
@@ -110,16 +110,37 @@ usesIndex tex wi = do
 	let file = (unlines.(map uncomment).lines) file'
 	return $ ("printindex", "")  `elem` (findSimpleCommands file)
 
+
+procTex :: FileProcessor
 procTex tex wi = do
+	let htmlFile = pagename tex ++ ".html"
+	    pdfFile  = pagename tex ++ ".pdf"
+	    pngFile  = pagename tex ++ ".png"
+	depRes <- liftIO $ needUpdates [htmlFile,pdfFile,pngFile] =<< findDeps tex
+	let up2date = isUpToDate depRes
+	liftIO $ showState (pagename tex) depRes
+	if not up2date then do
+		ok <- liftIO $ genPDF tex wi
+		when ok $ producedFile pdfFile
+		when ok $ producedFile pngFile
+		liftIO $ genHTML tex wi ok
+		producedFile htmlFile
+	   else do
+		producedFile pdfFile
+		producedFile pngFile
+		producedFile htmlFile
+	return ()
+
+
+genPDF tex wi = do
 	cwd <- getCurrentDirectory
 	safeChdir (dirname $ pagename tex)
 	err <- whileOk =<< runLatex
 	setCurrentDirectory cwd
 	case err of
-		ExitFailure _ -> putStr (show err ++ ", PDF deleted") >> safeRemoveFile pdffile
-		ExitSuccess   -> putStr "ok"
-	genHTML tex wi err
-	return ()
+		ExitFailure _ -> putStrLn (pagename tex ++ ": LaTeX failed ("++show err ++")")
+		ExitSuccess   -> return ()
+	return $ err == ExitSuccess
   where realsource = backDir (pagename tex) ++ tex
   	realbasename = filename $ pagename tex
   	pdffile  = pagename tex ++ ".pdf"
@@ -173,12 +194,12 @@ procTex tex wi = do
 
 
 
-genHTML tex wi err = do 
+genHTML tex wi ok = do 
 	index <- genIndex tex wi
 	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index ++ preview
  where  title = pagename tex
  	titleline = [Header 1 ("Latex File: "++ title)]
-        content | err == ExitSuccess = [
+        content | ok = [
 			 Paragraph [Text "File successfully created:"],
 			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
 			           [LinkElem (PlainLink logFile "Latex-Logfile")],
@@ -186,13 +207,13 @@ genHTML tex wi err = do
 			           [LinkElem (PlainLink texFile "Latex-Source")]]
 			]
                 | otherwise          = [	
-			 Paragraph [Text ("File not successfully created ("++(show err)++"):")],
+			 Paragraph [Text ("File not successfully created:")],
 			 ItemList [[Text "PDF-File (?)"],
 			           [LinkElem (PlainLink logFile "Latex-Logfile")],
 			           [LinkElem (PlainLink outFile "Latex-Output")],
 			           [LinkElem (PlainLink texFile "Latex-Source")]]
 			]
-        preview | err == ExitSuccess = [
+        preview | ok = [
 			 Header 2 "Preview",
 			 Paragraph [Image pngFile "Preview"]
 			]
