@@ -95,6 +95,7 @@ main = do
   
   let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc}
   
+  putStrLn "Generating files as needed.."
   -- This is where all the action happens
   producedFiles <- runFileProducers $ map ($wi) todo
 

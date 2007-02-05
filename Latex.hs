@@ -13,6 +13,7 @@ import WikiData
 import Common
 import HtmlStyle
 import Dependencies
+import PDF
 
 replicateCmd 0 cmd = return ExitSuccess
 replicateCmd n cmd = do
@@ -123,7 +124,8 @@ procTex tex wi = do
 		ok <- liftIO $ genPDF tex wi
 		when ok $ producedFile pdfFile
 		when ok $ producedFile pngFile
-		liftIO $ genHTML tex wi ok
+		pdfInfo <- liftIO $ if ok then getPDFInfo pdfFile >>= return . Just else return Nothing
+		liftIO $ genHTML tex wi ok pdfInfo
 		producedFile htmlFile
 	   else do
 		producedFile pdfFile
@@ -194,11 +196,14 @@ genPDF tex wi = do
 
 
 
-genHTML tex wi ok = do 
+genHTML tex wi ok pdfInfo = do 
 	index <- genIndex tex wi
-	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index ++ preview
+	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index ++ pdfIndex ++ preview
  where  title = pagename tex
  	titleline = [Header 1 ("Latex File: "++ title)]
+	pdfIndex = case pdfInfo of
+		Nothing -> []
+		Just info -> formatPDFInfo info
         content | ok = [
 			 Paragraph [Text "File successfully created:"],
 			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
