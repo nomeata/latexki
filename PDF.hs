@@ -5,6 +5,7 @@ import Control.Monad
 import Directory
 import System.Process
 import System.IO
+import Control.Concurrent
 import Data.List
 
 import WikiData
@@ -63,6 +64,7 @@ getPDFInfo file = do
 	(inp, out, err, pid) <- runInteractiveProcess "pdftk" options Nothing Nothing
 	hClose inp
 	info <- hGetContents out
+        forkIO $ waitForProcess pid >> return ()
 	return $ parseDumpData info
 
 formatPDFInfo file info = [
@@ -94,27 +96,23 @@ chapterFile file n = file ++ "." ++ (show n) ++ ".pdf"
 
 splitPDF file info = do
 	let chapters = zip [1..] (ranges (pdfIndex info))
-	date1 <- getModificationTime file
+	date1 <- getTime file
 	flip mapM chapters $ \(n,r) -> do
 		let outfile = chapterFile file n
 		doit <- newer date1 outfile
-		when doit $ extractPDFPages file outfile r
+		when doit $ liftIO $ extractPDFPages file outfile r
 		return outfile
 
 -- We don’t want to parse the PDF if no change is expected, so just look for the files
 guessSplitPDF file = do
-	let dir = dirname file
-	candits <- directoryFiles dir
-	return $ filter (file `isPrefixOf`) candits
+	candits <- getExistingOutput
+	return $ filter (file `isPrefixOf`) $ map (drop 2) candits
 
 newer date file = do
-	ex <- doesFileExist file
-	if ex then do
-		date2 <- getModificationTime file
-		if date > date2 then
-			return True
-		 else
-			return False
-	 else return True
+	date2 <- getTime file
+	if date > date2 then
+		return True
+	 else
+		return False
 
 

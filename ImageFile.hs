@@ -11,7 +11,7 @@ import Dependencies
 procImage image = do 
 	let htmlFile  = (pagename image) ++ ".html"
 	let pdfFile  = (pagename image) ++ ".pdf"
-	depRes <- liftIO $ needUpdate htmlFile [image]
+	depRes <- needUpdate htmlFile [image]
 	let up2date = isUpToDate depRes
 	liftIO $ showState (pagename image) depRes
 	unless up2date $ writeHtmlPage htmlFile (pagename image) (pagename image) content 

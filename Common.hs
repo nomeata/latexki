@@ -4,6 +4,8 @@ module Common (
 	runFileProducers,
 	producedFile,
 	producedFiles,
+	getTime,
+	doesExist,
 	getWi,
 	liftIO,
 	FileProcessor,
@@ -16,6 +18,7 @@ module Common (
 	getPagenames,
 	getOutputs,
 	getRecentChanges,
+	getExistingOutput,
 
 	logfilename,
 	datadir,
@@ -48,8 +51,10 @@ import Maybe
 import Monad
 import List
 import System.Directory
+import System.Time
 import Control.Monad.Writer
 import Control.Monad.Reader
+import CacheT
 
 import qualified FilePath as FP
 
@@ -57,20 +62,43 @@ import WikiData
 
 -- File Processor Datatype
 
-type FileProducer a = WriterT [FilePath] (ReaderT WikiInfo IO) a
+type FileProducer a = WriterT [FilePath] (
+	ReaderT WikiInfo (
+		CacheT FilePath ClockTime (
+			CacheT FilePath Bool ( IO )
+			)
+		)
+	) a
 type FileProcessor = FilePath -> FileProducer ()
 
 runFileProducer :: WikiInfo -> FileProducer () -> IO [FilePath]
-runFileProducer info producer = runReaderT (execWriterT producer) info
+runFileProducer info producer =
+	runCacheT doesFileExist (
+		runCacheT getModificationTime' (
+			runReaderT (
+				execWriterT producer
+			) info
+		)
+	)
 
 runFileProducers :: WikiInfo -> [FileProducer ()] -> IO [FilePath]
-runFileProducers info = fmap concat . mapM (runFileProducer info)
+runFileProducers info = runFileProducer info . sequence_
 
 producedFiles :: [FilePath] -> FileProducer ()
 producedFiles = tell
 
 producedFile :: FilePath -> FileProducer ()
 producedFile = producedFiles . (:[])
+
+doesExist file = lift $ lift $ lift $ callCache file
+
+getModificationTime' file = lift $ do
+	ex <- doesFileExist file
+	if ex then getModificationTime file
+	      else return $ TOD 0 0
+
+getTime :: FilePath -> FileProducer ClockTime
+getTime file = lift $ lift $ callCache file
 
 getWi :: FileProducer WikiInfo
 getWi = ask
@@ -86,10 +114,9 @@ data WikiInfo = WikiInfo {	sitemap :: SiteMap,
 			}
 
 getSiteMap = getWi >>= return . sitemap
-
 getWikiConfig = getWi >>= return  . wikiConfig
-
 getRecentChanges = getWi >>= return . recentChanges
+getExistingOutput = existingOutput `fmap` getWi
 
 getMainTitle = getWikiConfig >>= return . fromMaybe "A Wiki" . lookup "title"
 

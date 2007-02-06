@@ -12,7 +12,7 @@ import System.Directory
 
 procGeneric isBinary file = do 
 	let htmlFile  = (pagename file) ++ ".html"
-	depRes <- liftIO $ needUpdate htmlFile [file]
+	depRes <- needUpdate htmlFile [file]
 	let up2date = isUpToDate depRes
 	liftIO $ showState (pagename file) depRes
 	unless up2date $ do

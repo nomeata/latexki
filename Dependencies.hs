@@ -5,6 +5,7 @@ import System
 import System.IO
 import System.Posix.IO
 import Directory
+import Common
 
 data DepResult = UpToDate | ResultMissing String | DepNew [(String, String)] | Always String deriving (Show)
 
@@ -30,23 +31,17 @@ instance Monoid DepResult where
 needUpdates outputs deps = mconcat `fmap` mapM (flip needUpdate deps) outputs
 
 needUpdate output deps = do
-	ex <- doesFileExist output
+	ex <- liftIO $ doesFileExist output
 	if not ex then
 		return $ ResultMissing output
 	   else do
-	  	targetTime <- getModificationTime output
+	  	targetTime <- getTime output
               	let needUpdate' dep = do
-			ex <- doesFileExist dep
-			if not ex then
-				-- This is a strange case and probably should be
-				-- handled specially or just fail
-				return UpToDate
-			   else do
-				sourceTime <- getModificationTime dep
-				return $ if sourceTime < targetTime then
-					UpToDate
-				   else 
-				   	DepNew [(dep,output)]
+			sourceTime <- getTime dep
+			return $ if sourceTime < targetTime then
+				UpToDate
+			   else 
+				DepNew [(dep,output)]
 		mconcat `fmap` mapM needUpdate' deps
 		 	
 

@@ -93,7 +93,10 @@ main = do
   rc <- if "-n" `notElem` opts then getSVNRecentChanges repos else return []
   putStrLn "Done."
   
+  putStr "Finding existing files.."
   foundOutputs <- filter (not. isPrefixOf datadir) `fmap` recursiveFiles "./"
+  putStrLn "Done."
+
   let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc, existingOutput = foundOutputs}
   
   putStrLn "Generating files as needed.."

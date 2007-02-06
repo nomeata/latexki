@@ -37,6 +37,9 @@ uncomment ('%':_)       = ""
 uncomment (c:line)      = c:uncomment line
 	
 findSimpleCommands ""                       					= []
+findSimpleCommands ('\\':'%':rest) 						= findSimpleCommands rest
+findSimpleCommands ('%':rest) 							= findSimpleCommands rest'
+	where (_,rest')		= span (/='\n') rest
 findSimpleCommands ('\\':rest1) | null rest5					= [(command, "")]
 				| n == '{'      				= (command,param) :findSimpleCommands rest3
 				| n == '[' && (length rest3') > 2 && m == '{' 	= (command,param2):findSimpleCommands rest4
@@ -49,15 +52,14 @@ findSimpleCommands ('\\':rest1) | null rest5					= [(command, "")]
 	      (_,rest3')        = span (/=']') rest2
 	      (_:m:rest3'')     = rest3'
 	      (param2,rest4)    = span (/='}') rest3''
-findSimpleCommands (_:rest)                 									= findSimpleCommands rest	      
+findSimpleCommands (_:rest)                       				= findSimpleCommands rest	      
 
 
 depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
 		("usepackage",[".sty"]), ("includegraphics",["",".png"] ) ]
 findDeps tex = do
-	file' <- readFile tex
-	let file = (unlines.(map uncomment).lines) file'
-	    commands = findSimpleCommands file
+	file <- liftIO $ readFile tex
+	let commands = findSimpleCommands file
 	    candits = catMaybes $  map (\(c,f) -> case lookup c depCmds of 
 	  			        		Just exts -> Just $ (f,exts)
 							Nothing -> Nothing          ) commands
@@ -65,7 +67,7 @@ findDeps tex = do
 	additional <- liftM (nub.sort.concat) $ mapM findDeps files
 	return (tex:additional)
  where  addpath = map ((dirname tex++"/") ++ )
-	find (candit,exts) = liftM listToMaybe $ filterM (doesFileExist) [ 
+	find (candit,exts) = liftM listToMaybe $ filterM doesExist [ 
 			dir ++ "/" ++ candit ++ ext |
 				dir <- dirTrail tex,
 				ext <- exts
@@ -73,25 +75,24 @@ findDeps tex = do
 
 texInclCmds = ["input","include"]
 prepareStripped tex = do
-	file' <- readFile tex
-	let file = (unlines.(map uncomment).lines) file'
-	    commands = findSimpleCommands file
+	file <- liftIO $ readFile tex
+	let commands = findSimpleCommands file
 	    candits = map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
 	files <- liftM catMaybes $ mapM find candits
 	sequence (map snd files)
 	mapM (\(f,_) -> prepareStripped f) files
 	return ()
  where  addpath = map (datadir++)
-	find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
+	find candit = liftM listToMaybe $ filterM (doesExist.fst) [ 
 			(dir ++ "/" ++ candit ++ suf, m (dir ++ "/" ++ candit ++ suf) (candit ++ ".tex")) |
 				dir <- dirTrail tex,
 				(suf,m) <- methods
 			]
 	methods = [ (".part.tex", copy), (".tex",strip) ]
 	--copy f t =  putStrLn ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
-	copy f t = copyFile f t
+	copy f t = liftIO $ copyFile f t
 	--strip f t = putStrLn ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
-	strip f t = ((writeFileSafe t). strip' =<< readFile f)
+	strip f t = liftIO $ writeFileSafe t . strip' =<< readFile f
 	 where 
 	 	strip' file = chaptertitle $ mainPart file 
 		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
@@ -101,15 +102,13 @@ prepareStripped tex = do
 	        stail l  = tail l
 	
 
-usesPST tex = liftIO $ do
-	file' <- readFile tex
-	let file = (unlines.(map uncomment).lines) file'
-	return $ ("usepackage", "pst-pdf")  `elem` (findSimpleCommands file)
-	
-usesIndex tex = liftIO $ do
-	file' <- readFile tex
-	let file = (unlines.(map uncomment).lines) file'
-	return $ ("printindex", "")  `elem` (findSimpleCommands file)
+
+hasCommand command tex = liftIO $ do
+	file <- readFile tex
+	return $ command  `elem` (findSimpleCommands file)
+
+usesPST = hasCommand ("usepackage", "pst-pdf")
+usesIndex = hasCommand ("printindex", "")
 
 
 procTex :: FileProcessor
@@ -117,7 +116,7 @@ procTex tex = do
 	let htmlFile = pagename tex ++ ".html"
 	    pdfFile  = pagename tex ++ ".pdf"
 	    pngFile  = pagename tex ++ ".png"
-	depRes <- liftIO $ needUpdates [htmlFile,pdfFile,pngFile] =<< findDeps tex
+	depRes <- needUpdates [htmlFile,pdfFile,pngFile] =<< findDeps tex
 	let up2date = isUpToDate depRes
 	liftIO $ showState (pagename tex) depRes
 	if not up2date then do
@@ -126,7 +125,7 @@ procTex tex = do
 		when ok $ producedFile pngFile
 		if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
-			liftIO (splitPDF pdfFile pdfInfo) >>= producedFiles
+			splitPDF pdfFile pdfInfo >>= producedFiles
 			genHTML tex ok (Just pdfInfo)
 		 else 
 			genHTML tex ok Nothing
@@ -135,24 +134,24 @@ procTex tex = do
 		producedFile pdfFile
 		producedFile pngFile
 		producedFile htmlFile
-		liftIO (guessSplitPDF pdfFile) >>= producedFiles
+		guessSplitPDF pdfFile >>= producedFiles
 	return ()
 
 
-genPDF tex = liftIO $ do 
-	cwd <- getCurrentDirectory
-	safeChdir (dirname $ pagename tex)
-	err <- whileOk =<< runLatex
-	setCurrentDirectory cwd
+genPDF tex =  do 
+	cwd <- liftIO $ getCurrentDirectory
+	liftIO $ safeChdir (dirname $ pagename tex)
+	prepareStripped realsource
+	err <- liftIO $ whileOk =<< runLatex
+	liftIO $ setCurrentDirectory cwd
 	case err of
-		ExitFailure _ -> putStrLn (pagename tex ++ ": LaTeX failed ("++show err ++")")
+		ExitFailure _ -> liftIO $ putStrLn (pagename tex ++ ": LaTeX failed ("++show err ++")")
 		ExitSuccess   -> return ()
 	return $ err == ExitSuccess
   where realsource = backDir (pagename tex) ++ tex
   	realbasename = filename $ pagename tex
   	pdffile  = pagename tex ++ ".pdf"
   	runLatex = do
-	prepareStripped realsource
 
 	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
 	

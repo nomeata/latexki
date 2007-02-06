@@ -24,7 +24,7 @@ procWiki wiki = do
 	let htmlFile = pagename wiki ++ ".html"
 	let pdfFile = pagename wiki ++ ".pdf"
 	content <- liftIO $ readFile wiki
-	depRes <- liftIO $ mappend (alwaysUpdate content) `fmap` needUpdate htmlFile [wiki]
+	depRes <- mappend (alwaysUpdate content) `fmap` needUpdate htmlFile [wiki]
 	let up2date = isUpToDate depRes
 	liftIO $ showState (pagename wiki) depRes
 	wi <- getWi
