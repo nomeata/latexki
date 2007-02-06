@@ -97,7 +97,7 @@ prepareStripped tex = do
 	 	strip' file = chaptertitle $ mainPart file 
 		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
 		 	chaptertitle = replace "\\maketitle" ("\\chapter{"++title++"}")
-		mainPart = unlines .  stail . takeWhile (not. subListOf "\\end{document}") . stail . dropWhile (not. subListOf "\\begin{document}") . lines
+		mainPart = unlines . takeWhile (not. subListOf "\\end{document}") . stail . dropWhile (not. subListOf "\\begin{document}") . lines
 	        stail [] = []
 	        stail l  = tail l
 	
