@@ -3,6 +3,7 @@ module SVN (getSVNRecentChanges,updateSVN,coSVN) where
 import System
 import System.Process
 import System.IO
+import Control.Concurrent
 
 import Text.XML.HaXml.Parse
 import Text.XML.HaXml.Combinators
@@ -27,7 +28,7 @@ getCurrentRev repos = do
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
 	xml <- hGetContents out
-	waitForProcess pid
+        forkIO $ waitForProcess pid >> return ()
 	let (Document _ _ info _)= xmlParse "svn info" xml
 	return $ read $ verbatim $ find "revision" literal `o` tagWith (=="entry") `o` children $ CElem info
 
@@ -37,8 +38,7 @@ getSVNRecentChanges repos = do
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
 	xml <- hGetContents out
-	--no deadlock please
-	--waitForProcess pid
+        forkIO $ waitForProcess pid >> return ()
 	let doc= xmlParse "svn log" xml
 	return $ toLogEntries doc
 
