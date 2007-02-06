@@ -6,34 +6,38 @@ import WikiData
 import Maybe
 import List
 
-writeHtmlPage wi file title basename body = writeFileSafe file $ htmlPage wi title basename body 
+writeHtmlPage file title basename body = liftIO . (writeFileSafe file) =<< htmlPage title basename body 
 
-htmlPage wi title basename body = 
-  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" ++ (
-  tag "html" ((
-  	tag "head" ( concat [
-		tagP "meta" [("http-equiv","Content-Type"),("content","text/html; charset=UTF-8")] "",
-		tag "title" ((mainTitle wi)++" - "++title++"</title>"),
-		tagP "link" [("rel","stylesheet"),("type","text/css"),("href",stylefile)] ""
-	])
-  )++(
-  	tag "body" ((
-		tagP "div" [("class","menu")] ( tag "ul" (
-			concatMap li ([	("Start page", "./") ] ++
-					addmenu                ++
-				      [ ("Edit this", editLink basename),
-					("Create new page",editLink "" )])
-		))
-	)++(
-		tagP "div" [("class","content")] (concatMap render body)
-	))
-  )))
-	where li (t,l) = tag "li" $ aHref l $ t
-	      addmenuconf = fromMaybe "" . lookup "addmenu" . wikiConfig  $ wi
+htmlPage title basename body = do
+	mainTitle <- getMainTitle
+	wikiConfig <- getWikiConfig
+	sitemap <- getSiteMap
+	let exts basename = triple3 $ head $ filter ((==basename).triple1) sitemap
+	let   addmenuconf = fromMaybe "" . lookup "addmenu" $ wikiConfig
 	      addmenu =  (map (\f -> (f,"./"++f++".html") ) $ words addmenuconf) ++
 	                 (map (\e -> ("View as "++e,"./"++basename++"."++e)) $ exts basename)
+	return $
+	  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" ++ (
+	  tag "html" ((
+		tag "head" ( concat [
+			tagP "meta" [("http-equiv","Content-Type"),("content","text/html; charset=UTF-8")] "",
+			tag "title" (mainTitle++" - "++title++"</title>"),
+			tagP "link" [("rel","stylesheet"),("type","text/css"),("href",stylefile)] ""
+		])
+	  )++(
+		tag "body" ((
+			tagP "div" [("class","menu")] ( tag "ul" (
+				concatMap li ([	("Start page", "./") ] ++
+						addmenu                ++
+					      [ ("Edit this", editLink basename),
+						("Create new page",editLink "" )])
+			))
+		)++(
+			tagP "div" [("class","content")] (concatMap render body)
+		))
+	  )))
+	where li (t,l) = tag "li" $ aHref l $ t
 	      stylefile = backDir basename ++ "latexki-style.css"
-	      exts basename = triple3 $ head $ filter ((==basename).triple1) (sitemap wi)
 
 tagP name params body | null body = "<"++name++par++"/>"
                       | otherwise = "<"++name++par++">"++body++"</"++name++">"

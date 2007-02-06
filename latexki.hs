@@ -93,11 +93,12 @@ main = do
   rc <- if "-n" `notElem` opts then getSVNRecentChanges repos else return []
   putStrLn "Done."
   
-  let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc}
+  foundOutputs <- filter (not. isPrefixOf datadir) `fmap` recursiveFiles "./"
+  let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc, existingOutput = foundOutputs}
   
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
-  producedFiles <- runFileProducers $ map ($wi) todo
+  producedFiles <- runFileProducers wi todo
 
   --putStrLn $ "Produced: "++show producedFiles
 

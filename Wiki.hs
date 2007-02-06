@@ -20,17 +20,18 @@ alwaysUpdate text = mappend (if "!!sitemap!!" `subListOf` lc       then Always "
                             (if "!!recentchanges!!" `subListOf` lc then Always "RecentChanges" else UpToDate)
   where	lc = map toLower text
 
-procWiki wiki wi = do
+procWiki wiki = do
 	let htmlFile = pagename wiki ++ ".html"
 	let pdfFile = pagename wiki ++ ".pdf"
 	content <- liftIO $ readFile wiki
 	depRes <- liftIO $ mappend (alwaysUpdate content) `fmap` needUpdate htmlFile [wiki]
 	let up2date = isUpToDate depRes
 	liftIO $ showState (pagename wiki) depRes
+	wi <- getWi
 	let parsed  = parse wi $ map stripWhitespace $ lines content
-	unless up2date $ liftIO $ writeHtmlPage wi htmlFile (pagename wiki) (pagename wiki) parsed
+	unless up2date $ writeHtmlPage htmlFile (pagename wiki) (pagename wiki) parsed
 	producedFile htmlFile
-	unless up2date $ liftIO $ writeLatexPage wi (pagename wiki) (pagename wiki) (pagename wiki) parsed
+	unless up2date $ writeLatexPage (pagename wiki) (pagename wiki) (pagename wiki) parsed
 	producedFile pdfFile
 
 stripWhitespace = reverse.(dropWhile (==' ')).reverse

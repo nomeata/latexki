@@ -4,16 +4,18 @@ module Common (
 	runFileProducers,
 	producedFile,
 	producedFiles,
+	getWi,
 	liftIO,
 	FileProcessor,
 
-	WikiInfo(WikiInfo),
-	sitemap,
-	wikiConfig,
-	mainTitle,
+	WikiInfo(..),
 	pagenames,
-	outputs,
-	recentChanges,
+	getSiteMap,
+	getWikiConfig,
+	getMainTitle,
+	getPagenames,
+	getOutputs,
+	getRecentChanges,
 
 	logfilename,
 	datadir,
@@ -47,40 +49,54 @@ import Monad
 import List
 import System.Directory
 import Control.Monad.Writer
+import Control.Monad.Reader
 
 import qualified FilePath as FP
 
 import WikiData
 
 -- File Processor Datatype
-type FileProducer = WriterT [FilePath] IO ()
-type FileProcessor = FilePath -> WikiInfo -> FileProducer
 
-runFileProducer :: FileProducer -> IO [FilePath]
-runFileProducer = execWriterT
+type FileProducer a = WriterT [FilePath] (ReaderT WikiInfo IO) a
+type FileProcessor = FilePath -> FileProducer ()
 
-runFileProducers :: [FileProducer] -> IO [FilePath]
-runFileProducers = fmap concat . mapM runFileProducer
+runFileProducer :: WikiInfo -> FileProducer () -> IO [FilePath]
+runFileProducer info producer = runReaderT (execWriterT producer) info
 
-producedFiles :: [FilePath] -> FileProducer
+runFileProducers :: WikiInfo -> [FileProducer ()] -> IO [FilePath]
+runFileProducers info = fmap concat . mapM (runFileProducer info)
+
+producedFiles :: [FilePath] -> FileProducer ()
 producedFiles = tell
 
-producedFile :: FilePath -> FileProducer
+producedFile :: FilePath -> FileProducer ()
 producedFile = producedFiles . (:[])
 
+getWi :: FileProducer WikiInfo
+getWi = ask
 
 type PageName = String
+type SiteMap = [(PageName, String, [String])]
 
 -- General Info Data type
-data WikiInfo = WikiInfo {	sitemap :: [(PageName, String, [String]) ],
+data WikiInfo = WikiInfo {	sitemap :: SiteMap,
 				wikiConfig :: [(String,String)],
-				recentChanges :: RawRecentChanges
+				recentChanges :: RawRecentChanges,
+				existingOutput :: [FilePath]
 			}
-mainTitle = fromMaybe "A Wiki" . lookup "title" . wikiConfig
+
+getSiteMap = getWi >>= return . sitemap
+
+getWikiConfig = getWi >>= return  . wikiConfig
+
+getRecentChanges = getWi >>= return . recentChanges
+
+getMainTitle = getWikiConfig >>= return . fromMaybe "A Wiki" . lookup "title"
 
 pagenames = map triple1 . sitemap
+getPagenames = getWi >>= return . pagenames
 
-outputs = concatMap ( \(b,_,exts) -> map ((b++".")++) exts) . sitemap
+getOutputs = getSiteMap >>= return . concatMap ( \(b,_,exts) -> map ((b++".")++) exts)
 
 logfilename = "./latexki-run.log"
 datadir     = "./data/"

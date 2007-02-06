@@ -10,7 +10,7 @@ import Maybe
 import Monad
 import System.Directory
 
-procGeneric isBinary file wi = do 
+procGeneric isBinary file = do 
 	let htmlFile  = (pagename file) ++ ".html"
 	depRes <- liftIO $ needUpdate htmlFile [file]
 	let up2date = isUpToDate depRes
@@ -21,7 +21,7 @@ procGeneric isBinary file wi = do
 			return $ if isReadable source then pre source else binary
 		  else	if fromJust isBinary then return binary
 			else liftIO $ pre `liftM` readFile file
-		liftIO $ writeHtmlPage wi htmlFile (pagename file) (pagename file) content 
+		writeHtmlPage htmlFile (pagename file) (pagename file) content 
 	producedFile htmlFile
   where	isReadable = not.(any (=='\0'))
   	pre source = [Header 1 file,
@@ -32,7 +32,7 @@ procGeneric isBinary file wi = do
 	            Paragraph [LinkElem (DLLink link)]]
 	link = backDir (pagename file) ++ file
 
-procCopyGen file wi = procCopy file wi >> procGeneric Nothing file wi
+procCopyGen file = procCopy file >> procGeneric Nothing file 
 
-procCopy file wi = liftIO (copyFile file (filename file)) >> producedFile (filename file)
+procCopy file = liftIO (copyFile file (filename file)) >> producedFile (filename file)
 

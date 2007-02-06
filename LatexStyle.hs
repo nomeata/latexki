@@ -11,21 +11,22 @@ import Maybe
 import List
 
 
-writeLatexPage wi file title basename body = do
-  writeFileSafe (file ++ ".tex") $ latexFile wi title basename body
-  cwd <- getCurrentDirectory
-  readNull <- return.Just =<< openFile "/dev/null" ReadMode
-  writeLog <- return.Just =<< openFile (file ++ ".output") WriteMode
-  safeChdir (dirname file)
-  err <- runProcess "pdflatex" [(filename file)++".tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
-  setCurrentDirectory cwd
-  case err of
-	ExitFailure _ -> putStrLn (pagename file ++ ": LaTeX failed ("++show err ++")")
-	ExitSuccess   -> return ()
+writeLatexPage file title basename body = do
+  liftIO  . (writeFileSafe (file ++ ".tex")) =<< latexFile title basename body
+  liftIO $ do
+	  cwd <- getCurrentDirectory
+	  readNull <- return.Just =<< openFile "/dev/null" ReadMode
+	  writeLog <- return.Just =<< openFile (file ++ ".output") WriteMode
+	  safeChdir (dirname file)
+	  err <- runProcess "pdflatex" [(filename file)++".tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
+	  setCurrentDirectory cwd
+	  case err of
+		ExitFailure _ -> putStrLn (pagename file ++ ": LaTeX failed ("++show err ++")")
+		ExitSuccess   -> return ()
   
 
 
-latexFile wi title basename body = 
+latexFile title basename body = return $
   "\\documentclass{article}\n"++
   "\\usepackage[utf8]{inputenc}\n"++
   "\\usepackage[T1]{fontenc}\n"++

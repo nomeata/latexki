@@ -72,14 +72,14 @@ findDeps tex = do
 			]
 
 texInclCmds = ["input","include"]
-prepareStripped tex wi = do
+prepareStripped tex = do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	    commands = findSimpleCommands file
 	    candits = map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
 	files <- liftM catMaybes $ mapM find candits
 	sequence (map snd files)
-	mapM (\(f,_) -> prepareStripped f wi) files
+	mapM (\(f,_) -> prepareStripped f) files
 	return ()
  where  addpath = map (datadir++)
 	find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
@@ -101,19 +101,19 @@ prepareStripped tex wi = do
 	        stail l  = tail l
 	
 
-usesPST tex wi = do
+usesPST tex = liftIO $ do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	return $ ("usepackage", "pst-pdf")  `elem` (findSimpleCommands file)
 	
-usesIndex tex wi = do
+usesIndex tex = liftIO $ do
 	file' <- readFile tex
 	let file = (unlines.(map uncomment).lines) file'
 	return $ ("printindex", "")  `elem` (findSimpleCommands file)
 
 
 procTex :: FileProcessor
-procTex tex wi = do
+procTex tex = do
 	let htmlFile = pagename tex ++ ".html"
 	    pdfFile  = pagename tex ++ ".pdf"
 	    pngFile  = pagename tex ++ ".png"
@@ -121,15 +121,15 @@ procTex tex wi = do
 	let up2date = isUpToDate depRes
 	liftIO $ showState (pagename tex) depRes
 	if not up2date then do
-		ok <- liftIO $ genPDF tex wi
+		ok <- genPDF tex 
 		when ok $ producedFile pdfFile
 		when ok $ producedFile pngFile
 		if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
 			liftIO (splitPDF pdfFile pdfInfo) >>= producedFiles
-			liftIO $ genHTML tex wi ok (Just pdfInfo)
+			genHTML tex ok (Just pdfInfo)
 		 else 
-			liftIO $ genHTML tex wi ok Nothing
+			genHTML tex ok Nothing
 		producedFile htmlFile
 	   else do
 		producedFile pdfFile
@@ -139,7 +139,7 @@ procTex tex wi = do
 	return ()
 
 
-genPDF tex wi = do
+genPDF tex = liftIO $ do 
 	cwd <- getCurrentDirectory
 	safeChdir (dirname $ pagename tex)
 	err <- whileOk =<< runLatex
@@ -152,7 +152,7 @@ genPDF tex wi = do
   	realbasename = filename $ pagename tex
   	pdffile  = pagename tex ++ ".pdf"
   	runLatex = do
-	prepareStripped realsource wi
+	prepareStripped realsource
 
 	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
 	
@@ -172,7 +172,7 @@ genPDF tex wi = do
 		safeRemoveFile $ realbasename ++ ".output"
 		return ExitSuccess
 
-	usesPST' <- usesPST realsource wi
+	usesPST' <- usesPST realsource
 	let pstqueue = if usesPST'
 			then [
 				runit "/usr/bin/latex" [ realsource ],
@@ -181,7 +181,7 @@ genPDF tex wi = do
 	        	]
 			else []
 	
-	usesIndex' <- usesIndex realsource wi
+	usesIndex' <- usesIndex realsource 
 	let indexqueue = if usesIndex'
 			then [
 				runit "/usr/bin/makeindex" [ (realbasename ++ ".idx") ]
@@ -201,9 +201,9 @@ genPDF tex wi = do
 
 
 
-genHTML tex wi ok pdfInfo = do 
-	index <- genIndex tex wi
-	writeFileSafe target $ htmlPage wi tex title $ titleline ++ content ++ index ++ pdfIndex ++ preview
+genHTML tex ok pdfInfo = do 
+	index <- liftIO $ genIndex tex 
+	writeHtmlPage target tex title $ titleline ++ content ++ index ++ pdfIndex ++ preview
  where  title = pagename tex
  	titleline = [Header 1 ("Latex File: "++ title)]
 	pdfIndex = case pdfInfo of
@@ -242,7 +242,7 @@ findspans first extract list = findspans' first (map extract list) 1 0
         findspans' current (Just new:xs) a b =  ((a,b), current) : findspans' new     xs (b+1) (b+1)
         findspans' current (Nothing :xs) a b =                     findspans' current xs  a    (b+1)
 
-genIndex tex wi = return . format . extract . map uncomment . lines =<< readFile tex
+genIndex tex = return . format . extract . map uncomment . lines =<< readFile tex
   where	extract = findspans "Preamble" extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
 				                guard $ command =="chapter"
