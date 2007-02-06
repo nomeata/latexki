@@ -6,16 +6,16 @@ import WikiData
 import Maybe
 import List
 
-writeHtmlPage file title basename body = liftIO . (writeFileSafe file) =<< htmlPage title basename body 
+writeHtmlPage file basename title body = liftIO . (writeFileSafe file) =<< htmlPage basename title body 
 
-htmlPage title basename body = do
+htmlPage basename title body = do
 	mainTitle <- getMainTitle
 	wikiConfig <- getWikiConfig
 	sitemap <- getSiteMap
-	let exts basename = triple3 $ head $ filter ((==basename).triple1) sitemap
-	let   addmenuconf = fromMaybe "" . lookup "addmenu" $ wikiConfig
-	      addmenu =  (map (\f -> (f,"./"++f++".html") ) $ words addmenuconf) ++
-	                 (map (\e -> ("View as "++e,"./"++basename++"."++e)) $ exts basename)
+	let exts          = triple3 $ head $ filter ((==basename).triple1) sitemap
+	    addmenuconf   = fromMaybe "" . lookup "addmenu" $ wikiConfig
+	    addmenu       =  (map (\f -> (f,"./"++f++".html") ) $ words addmenuconf) ++
+	                     (map (\e -> ("View as "++e,"./"++basename++"."++e))  exts)
 	return $
 	  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" ++ (
 	  tag "html" ((

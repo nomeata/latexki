@@ -15,20 +15,12 @@ import HtmlStyle
 import Dependencies
 import PDF
 
-replicateCmd 0 cmd = return ExitSuccess
-replicateCmd n cmd = do
-	res <- cmd
-	case res of
-		ExitSuccess  -> replicateCmd (n-1) cmd
-		otherwise    -> return res
-
 whileOk []     = return ExitSuccess
 whileOk (x:xs) = do
 	res <- x
 	case res of 
 		ExitSuccess -> whileOk xs
 		otherwise   -> return res
-		
 
 uncomment ""            = ""
 uncomment "\\"          = "\\"
@@ -201,11 +193,12 @@ genPDF tex =  do
 
 
 genHTML tex ok pdfInfo = do 
-	index <- liftIO $ genIndex tex 
-	writeHtmlPage target tex title $ titleline ++ content ++ index ++ pdfIndex ++ preview
- where  title = pagename tex
- 	titleline = [Header 1 ("Latex File: "++ title)]
-	pdfIndex = case pdfInfo of
+	source <- liftIO $ readFile tex
+	let index = getIndex tex source
+	    title = getTitle tex source
+	    titleline = [Header 1 ("Latex File: "++ title)]
+	writeHtmlPage target (pagename tex) title $ titleline ++ content ++ index ++ pdfIndex ++ preview
+  where pdfIndex = case pdfInfo of
 		Nothing -> []
 		Just info -> formatPDFInfo pdfFile info
         content | ok = [
@@ -234,6 +227,8 @@ genHTML tex ok pdfInfo = do
 	pngFile = (pagename tex) ++ ".png"				      
 	texFile = (backDir tex) ++ tex
 	target  = (pagename tex) ++ ".html" 
+
+
 findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]
 findspans _      _       []   = []
 findspans first extract list = findspans' first (map extract list) 1 0
@@ -241,7 +236,7 @@ findspans first extract list = findspans' first (map extract list) 1 0
         findspans' current (Just new:xs) a b =  ((a,b), current) : findspans' new     xs (b+1) (b+1)
         findspans' current (Nothing :xs) a b =                     findspans' current xs  a    (b+1)
 
-genIndex tex = return . format . extract . map uncomment . lines =<< readFile tex
+getIndex tex = format . extract . map uncomment . lines 
   where	extract = findspans "Preamble" extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
 				                guard $ command =="chapter"
@@ -249,6 +244,5 @@ genIndex tex = return . format . extract . map uncomment . lines =<< readFile te
 	format = (Header 2 "Index-Preview":) . (:[]) . ItemList . map format'
 	  where format' ((a,b),t) = [Text (t++" "),LinkElem (PlainLink (editLinkLines (pagename tex) a b) "(bearbeiten)")]
 
-	
-	
+getTitle tex = fromMaybe (pagename tex) . lookup "title" . findSimpleCommands  
 

@@ -63,8 +63,10 @@ getPDFInfo file = do
 	let options = [file,"dump_data"]
 	(inp, out, err, pid) <- runInteractiveProcess "pdftk" options Nothing Nothing
 	hClose inp
+	hClose err
 	info <- hGetContents out
-        forkIO $ waitForProcess pid >> return ()
+	-- klappt leider nicht
+        -- forkIO $ waitForProcess pid >> return ()
 	return $ parseDumpData info
 
 formatPDFInfo file info = [

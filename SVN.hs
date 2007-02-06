@@ -28,6 +28,7 @@ getCurrentRev repos = do
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
 	xml <- hGetContents out
+	-- this fails in instances
         forkIO $ waitForProcess pid >> return ()
 	let (Document _ _ info _)= xmlParse "svn info" xml
 	return $ read $ verbatim $ find "revision" literal `o` tagWith (=="entry") `o` children $ CElem info
