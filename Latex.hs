@@ -124,13 +124,18 @@ procTex tex wi = do
 		ok <- liftIO $ genPDF tex wi
 		when ok $ producedFile pdfFile
 		when ok $ producedFile pngFile
-		pdfInfo <- liftIO $ if ok then getPDFInfo pdfFile >>= return . Just else return Nothing
-		liftIO $ genHTML tex wi ok pdfInfo
+		if ok then do
+			pdfInfo <- liftIO $ getPDFInfo pdfFile 
+			liftIO (splitPDF pdfFile pdfInfo) >>= producedFiles
+			liftIO $ genHTML tex wi ok (Just pdfInfo)
+		 else 
+			liftIO $ genHTML tex wi ok Nothing
 		producedFile htmlFile
 	   else do
 		producedFile pdfFile
 		producedFile pngFile
 		producedFile htmlFile
+		liftIO (guessSplitPDF pdfFile) >>= producedFiles
 	return ()
 
 
@@ -203,7 +208,7 @@ genHTML tex wi ok pdfInfo = do
  	titleline = [Header 1 ("Latex File: "++ title)]
 	pdfIndex = case pdfInfo of
 		Nothing -> []
-		Just info -> formatPDFInfo info
+		Just info -> formatPDFInfo pdfFile info
         content | ok = [
 			 Paragraph [Text "File successfully created:"],
 			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
