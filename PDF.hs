@@ -81,23 +81,25 @@ formatPDFInfo file info = [
         subfile n = chapterFile file n
 
 extractPDFPages infile outfile (from, to) = do
-	let range = (show from) ++ "-" ++ fromMaybe "end" (fmap show to)
+	let range = (show from) ++ "-" ++ (show to)
 	let options = [infile,"cat",range,"output",outfile]
+	liftIO $ print $ unwords ("pdftk":options)
 	pid <- runProcess "pdftk" options Nothing Nothing Nothing Nothing Nothing
 	waitForProcess pid
 	return ()
 
-ranges [] = []
-ranges (x:xs) | pdfIndexPage x > 1 = (1,Just (pdfIndexPage x - 1)) : ranges'(x:xs)
-              | otherwise          =                                 ranges'(x:xs)
-ranges' [] = []
-ranges' [last] =   [(pdfIndexPage last,Nothing)]
-ranges' (x:y:xs) = (pdfIndexPage x,Just (pdfIndexPage y -1 )) : ranges' (y:xs)
+ranges n [] = []
+ranges n (x:xs) | pdfIndexPage x > 1 = (1, pdfIndexPage x - 1) : ranges' n (x:xs)
+                | otherwise          =                           ranges' n (x:xs)
+ranges' n [] = []
+ranges' n [last] =   [(pdfIndexPage last, n)]
+ranges' n (x:y:xs) = (pdfIndexPage x,pdfIndexPage y - 1 ) : ranges' n (y:xs)
 
 chapterFile file n = file ++ "." ++ (show n) ++ ".pdf"
 
 splitPDF file info = do
-	let chapters = zip [1..] (ranges (pdfIndex info))
+	let n        = numberOfPages info
+	    chapters = zip [1..] (ranges n (pdfIndex info))
 	date1 <- getTime file
 	flip mapM chapters $ \(n,r) -> do
 		let outfile = chapterFile file n
