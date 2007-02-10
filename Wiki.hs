@@ -94,7 +94,7 @@ parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi
 	isBrokenLink	  = "[" `isPrefixOf` t && not isBracketLink
 	isBracketLink     = "[" `isPrefixOf`t  && not (null lrest) && isValidPagename link 
 	isWebLink         = "http://" `isPrefixOf` t
-	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_.-~" -- more to add?
+	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_.-~?=" -- more to add?
 
 
 isCamelCase []      = False

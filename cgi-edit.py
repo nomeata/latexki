@@ -303,7 +303,7 @@ def print_success(new, basename, ext, new_rev):
 <head>
 <title>%(title)s</title>
 </head>
-<boddy>
+<body>
 <h1>%(title)s</h1>
 %(text)s
 </body>
@@ -316,4 +316,4 @@ def ptype(ext):
 
 
 main()
-#vim:ts=4:sw=4:expandtab:smarttab
+# vim:ts=4:sw=4:expandtab:smarttab
