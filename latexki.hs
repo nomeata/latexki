@@ -7,36 +7,42 @@
 import System
 import System.IO
 import System.Posix.IO
+import System.FilePath
 import Directory
 import Monad
 import List
 
 import Common
-import Wiki
-import Latex
+--import Wiki
+--import Latex
 import Generic
 import ImageFile
 import SVN
+import ReadDir
 
 import Data.Map ((!))
 
-pipes :: String -> ( [String], FileProcessor )
-pipes "tex"   = (["html","pdf","png"],  procTex  )
-pipes "latex" = pipes "tex"
-pipes ""      = (["html","pdf"], procWiki    )
-pipes "css"   = (["html","css"], procCopyGen ) 
-pipes "png"   = (["html","pdf"], procImage ) 
-pipes "jpg"   = (["html","pdf"], procImage ) 
-pipes "eps"   = (["html"], procGeneric (Just True))
-pipes _       = (["html"], procGeneric Nothing) 
+run_producer page = producer (pageType page) page
 
+{-
+producer "tex"   = procTex 
+producer "latex" = producer "tex"
+producer ""      = procWiki
+-}
+producer "css"   = procCopyGen 
+producer "png"   = procImage 
+producer "jpg"   = procImage
+producer "eps"   = procGeneric (Just True)
+producer _       = procGeneric Nothing
+
+{-
 actions file = do 
 	let  (basename, ext)  = splitWikiPath file
 	     withExt e        = basename++"."++e
 	     (exts, producer) = pipes ext
 	     sitemapEntry     = (basename, ext, exts)
         return $ (sitemapEntry, producer file)
-
+-}
 
 {-
 anyM  cond list = mapM cond list >>= return.or
@@ -63,6 +69,8 @@ main = do
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
   setCurrentDirectory outdir
 
+  -- Setting thigs up (e.g. loggin, svn updating)
+
   terminal <- hIsTerminalDevice stdout
   if not terminal then do
   	-- if we try to run this program on windows, this might make problems
@@ -78,15 +86,16 @@ main = do
 	                                  else return ()
               else                             coSVN repos
 
-  inputfiles <- (filter (not . isPrefixOf (drop 2 datadir) . pagename) . sort) `fmap` recursiveFiles datadir
-
   putStr "Reading Configuration..."
   config <- readConfig
   putStrLn "done."
 
-  putStr "Generating Sitemap..."
-  (sm, todo) <- unzip `fmap` mapM actions inputfiles
-  putStrLn $ (show $ length sm) ++ " base files."
+  putStr "Reading Directory..."
+  inputfiles <- filter (not . isPrefixOf (normalise datadir) . deFileName) `liftM`
+  		readDir datadir
+
+--  (sm, todo) <- unzip `fmap` mapM actions inputfiles
+  putStrLn $ (show $ length inputfiles) ++ " base files."
 
 
   putStr "Generating Recent Changes.."
@@ -94,25 +103,33 @@ main = do
   putStrLn "Done."
   
   putStr "Finding existing files.."
-  foundOutputs <- filter (not. isPrefixOf datadir) `fmap` recursiveFiles "./"
+  foundOutputs <- filter (not . isPrefixOf (normalise datadir) . deFileName) `liftM`
+  			readDir ""
   putStrLn "Done."
 
-  let wi = WikiInfo { sitemap = sm , wikiConfig = config, recentChanges = rc, existingOutput = foundOutputs}
+  let wi = WikiInfo {
+  	sitemap = map de2sm inputfiles,
+  	wikiConfig = config,
+	recentChanges = rc,
+	existingOutput = foundOutputs
+	}
+
+  putStr "Find out there is to do.."
+  let todo = sitemap wi -- Shortcut
+  putStrLn "Done."
   
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
-  producedFiles <- runFileProducers wi todo
+  producedFiles <- runFileProducers wi $ map run_producer todo
 
-  --putStrLn $ "Produced: "++show producedFiles
+  putStrLn $ "Produced: "++show producedFiles
 
   putStrLn "Cleaning up..."
-  foundOutputs <- recursiveFiles "./"
-  let --expectedOutputs = map ("./"++) $ outputs wi
-      expectedOutputs = map ("./"++) producedFiles
-      systemFiles = [logfilename]
+  foundOutputs <- map deFileName `liftM` readDir ""
+  let systemFiles = [logfilename]
       putStrExts   = [".log",".output"]
       delete =  filter (\f -> not $ any (\e -> e `isSuffixOf` f) putStrExts) $
-      		filter (`notElem` expectedOutputs) $
+      		filter (`notElem` producedFiles) $
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $
       		foundOutputs

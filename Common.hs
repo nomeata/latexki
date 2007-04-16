@@ -4,11 +4,23 @@ module Common (
 	runFileProducers,
 	producedFile,
 	producedFiles,
-	getTime,
-	doesExist,
 	getWi,
 	liftIO,
 	FileProcessor,
+
+	getInputTime,
+	getOutputTime,
+	doesOutputExist,
+
+	outputFile,
+
+	de2sm,
+	pagename,
+	pageOutput,
+	pageOutputs,
+	pageInput,
+	pageType,
+	pageSource,
 
 	WikiInfo(..),
 	pagenames,
@@ -19,6 +31,7 @@ module Common (
 	getOutputs,
 	getRecentChanges,
 	getExistingOutput,
+	pageExts,
 
 	logfilename,
 	datadir,
@@ -27,15 +40,13 @@ module Common (
 	triple2,
 	triple3,
 
-	pagename,
-	splitFilePath,
-	splitWikiPath,
 	dirTrail,
 	backDir,
 	editLink,
 	editLinkLines,
-	filename,
-	dirname,
+	newLink,
+	inTargetDir,
+	fileRelative,
 	safeChdir,
 	writeFileSafe,
 	safeRemoveFile,
@@ -54,32 +65,48 @@ import System.Directory
 import System.Time
 import Control.Monad.Writer
 import Control.Monad.Reader
+import qualified Data.ByteString.Lazy.Char8 as B
+import System.FilePath
+
 import CacheT
 
-import qualified FilePath as FP
-
+import ReadDir
 import WikiData
+
+-- What produces what
+
+generated_by :: String -> [String]
+generated_by "tex"   = ["html","pdf","png"]
+generated_by "latex" = generated_by "tex"
+generated_by ""      = ["html","pdf"]
+generated_by "css"   = ["html","css"]
+generated_by "png"   = ["html","pdf"]
+generated_by "jpg"   = ["html","pdf"]
+generated_by "eps"   = ["html"]
+generated_by _       = ["html"]
+
 
 -- File Processor Datatype
 
 type FileProducer a = WriterT [FilePath] (
 	ReaderT WikiInfo (
-		CacheT FilePath ClockTime (
-			CacheT FilePath Bool ( IO )
-			)
+--		CacheT FilePath ClockTime (
+--			CacheT FilePath Bool (
+				IO
+--			)
 		)
 	) a
-type FileProcessor = FilePath -> FileProducer ()
+type FileProcessor = PageInfo -> FileProducer ()
 
 runFileProducer :: WikiInfo -> FileProducer () -> IO [FilePath]
 runFileProducer info producer =
-	runCacheT doesFileExist (
-		runCacheT getModificationTime' (
+--	runCacheT doesFileExist (
+--		runCacheT getModificationTime' (
 			runReaderT (
 				execWriterT producer
 			) info
-		)
-	)
+--		)
+--	)
 
 runFileProducers :: WikiInfo -> [FileProducer ()] -> IO [FilePath]
 runFileProducers info = runFileProducer info . sequence_
@@ -90,67 +117,92 @@ producedFiles = tell
 producedFile :: FilePath -> FileProducer ()
 producedFile = producedFiles . (:[])
 
-doesExist file = lift $ lift $ lift $ callCache file
+-- doesExist file = lift $ lift $ lift $ callCache file
 
-getModificationTime' file = lift $ do
-	ex <- doesFileExist file
-	if ex then getModificationTime file
-	      else return $ TOD 0 0
+--getModificationTime' file = lift $ do
+--	ex <- doesFileExist file
+--	if ex then getModificationTime file
+--	      else return $ TOD 0 0
 
-getTime :: FilePath -> FileProducer ClockTime
-getTime file = lift $ lift $ callCache file
+--getTime :: FilePath -> FileProducer ClockTime
+--getTime file = lift $ lift $ callCache file
+
+getOutputTime file = (fmap deModTime . listToMaybe . filter ((file ==) . deFileName)) `liftM` getExistingOutput 
+doesOutputExist file = (not . null  . filter ((file ==) . deFileName)) `liftM` getExistingOutput 
+
+getInputTime = smModTime 
+--doesInputExist page = isJust `liftM` lookupPage page
 
 getWi :: FileProducer WikiInfo
 getWi = ask
 
-type PageName = String
-type SiteMap = [(PageName, String, [String])]
+--newtype PageName = PageName String deriving (Eq, Ord)
+--instance Show PageName where
+-- show (PageName pn) = "Page " ++ pn
+
+
+pagename PageInfo {smPageName = PageName pn} = pn
+
+de2sm de = PageInfo {
+		smPageName = PageName (dropExtensions (deFileName de)),
+		smType     =           takeExtensions (deFileName de),
+		smModTime  = deModTime de,
+		smContent  = deFileContent de
+		}
+
+type SiteMap = [PageInfo]
+
 
 -- General Info Data type
 data WikiInfo = WikiInfo {	sitemap :: SiteMap,
 				wikiConfig :: [(String,String)],
 				recentChanges :: RawRecentChanges,
-				existingOutput :: [FilePath]
+				existingOutput :: [DirEntry]
 			}
 
-getSiteMap = getWi >>= return . sitemap
-getWikiConfig = getWi >>= return  . wikiConfig
-getRecentChanges = getWi >>= return . recentChanges
-getExistingOutput = existingOutput `fmap` getWi
+getSiteMap = sitemap `liftM` getWi
+getWikiConfig = wikiConfig `liftM` getWi
+getRecentChanges = recentChanges `liftM` getWi 
+getExistingOutput = existingOutput `liftM` getWi
 
 getMainTitle = getWikiConfig >>= return . fromMaybe "A Wiki" . lookup "title"
 
-pagenames = map triple1 . sitemap
+pagenames = map smPageName . sitemap
 getPagenames = getWi >>= return . pagenames
 
-getOutputs = getSiteMap >>= return . concatMap ( \(b,_,exts) -> map ((b++".")++) exts)
+getOutputs = concatMap pageOutputs `liftM` getSiteMap 
 
-logfilename = "./latexki-run.log"
-datadir     = "./data/"
+pageSource page = smContent page
+pageType page = smType page
+pageOutput PageInfo {smPageName = pn, smType = t} ext =      outputFile pn ext 
+pageOutputs PageInfo {smPageName = pn, smType = t}    = map (outputFile pn) $ generated_by t 
+pageInput PageInfo {smPageName = pn, smType = t}      = datadir </> outputFile pn t
+
+outputFile (PageName base) ext = base <.> ext
+
+inTargetDir page action = do
+	  cwd <- getCurrentDirectory
+	  safeChdir (takeDirectory (pagename page))
+	  ret <- action
+	  setCurrentDirectory cwd
+	  return ret
+
+lookupPage page = (listToMaybe . filter ((page ==) . smPageName)) `liftM` getSiteMap
+
+pageExts page =  generated_by $ smType page
+
+
+logfilename = "latexki-run.log"
+datadir     = "data"
 
 safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
-writeFileSafe file str = createDirectoryIfMissing True (dirname file) >> writeFile file str
+writeFileSafe file str = createDirectoryIfMissing True (takeDirectory file) >> writeFile file str
 safeRemoveFile file = do exists <- doesFileExist file
                          if exists then removeFile file else return ()
 
-pagename = removeExt . fst . splitWikiPath
-filename = snd.FP.splitFileName 
-dirname  = fst.FP.splitFileName
+--filename = takeExtensions
+--dirname  = takeDirectory
 
-removeExt = takeWhile (/='.')
-
-splitWikiPath :: FilePath -> (PageName, String)
-splitWikiPath path' = case break (== '.') path of
-    (name, "")    -> (name, "")
-    (name, _:ext) -> (name, ext)
-  where	path = stripPrefix "/" $ stripPrefix datadir path'
-
-splitFilePath :: FilePath -> (String, String, String)
-splitFilePath path = case break (== '.') basename of
-    (name, "")      -> (dir, name, "")
-    (name, _:ext) -> (dir, name, ext)
-  where
-    (dir, basename) = FP.splitFileName path
 
 stripPrefix pre str | pre `isPrefixOf` str = drop (length pre) str
                     | otherwise            = str
@@ -161,11 +213,16 @@ dirTrail' "" = []
 dirTrail' ('/':dir) = dir : dirTrail' dir
 dirTrail' path = dirTrail' $ dropWhile (/='/')  path
 
-backDir path =  concat $ replicate (length $ filter (=='/') path) "../"
+--backDir' path =  concat $ replicate (length $ filter (=='/') path) "../"
+backDir' path = joinPath $ replicate (length (splitPath path) - 1) ".."
+backDir  page = backDir' (pagename page)
 
-editLink      page         = backDir page ++ "cgi/edit/" ++ page
-editLinkLines page von bis = backDir page ++ "cgi/edit/" ++ page ++
-				"?lines=" ++ show von ++ "-" ++ show bis
+editLink page  = backDir page </> "cgi/edit" </> pagename page
+newLink  page  = backDir page </> "cgi/edit"
+fileRelative :: PageInfo -> String
+fileRelative page = backDir page </> pageInput page
+
+editLinkLines page from to  = backDir page ++ "cgi/edit/" ++ (pagename page) ++ "?lines=" ++ show from ++ "-" ++ show to
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x

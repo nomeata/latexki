@@ -1,4 +1,4 @@
-module Dependencies (needUpdate, needUpdates, isUpToDate, DepResult(..), showState) where
+module Dependencies (needUpdate, needUpdates, isUpToDate, DepResult(..), showState, anyOlder) where
 
 import Data.Monoid
 import System
@@ -6,14 +6,15 @@ import System.IO
 import System.Posix.IO
 import Directory
 import Common
+import WikiData
 
-data DepResult = UpToDate | ResultMissing String | DepNew [(String, String)] | Always String deriving (Show)
+data DepResult = UpToDate | ResultMissing PageInfo | DepNew [(PageInfo, PageInfo)] | Always String 
 
 isUpToDate UpToDate = True
 isUpToDate _        = False
 
 showState name UpToDate = return ()
-showState name x        = putStrLn $ name ++ " updated because: " ++ (show x)
+showState name x        = putStrLn $ name ++ " updated because: " -- ++ (show x)
 
 instance Monoid DepResult where
 	mempty = UpToDate
@@ -28,20 +29,23 @@ instance Monoid DepResult where
 	DepNew l1       `mappend` DepNew l2       = DepNew (l1 ++ l2)
 
 
-needUpdates outputs deps = mconcat `fmap` mapM (flip needUpdate deps) outputs
+needUpdates targets deps = mconcat `fmap` mapM (flip needUpdate deps) targets
 
-needUpdate output deps = do
-	ex <- liftIO $ doesFileExist output
-	if not ex then
-		return $ ResultMissing output
-	   else do
-	  	targetTime <- getTime output
-              	let needUpdate' dep = do
-			sourceTime <- getTime dep
-			return $ if sourceTime < targetTime then
-				UpToDate
-			   else 
-				DepNew [(dep,output)]
-		mconcat `fmap` mapM needUpdate' deps
+needUpdate target deps = do
+	let targetTime = getInputTime target
+	let needUpdate' dep = do
+		let sourceTime = getInputTime dep
+		return $ if sourceTime < targetTime then
+			UpToDate
+		   else 
+			DepNew [(dep,target)]
+	mconcat `fmap` mapM needUpdate' deps
 		 	
+
+anyOlder page targets = do
+	let sourceTime = Just $ getInputTime page
+	let isOlder target = do
+		targetTime <- getOutputTime target
+		return $ sourceTime > targetTime
+	or `fmap` mapM isOlder targets
 

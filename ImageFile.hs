@@ -8,18 +8,20 @@ import HtmlStyle
 import LatexStyle
 import Dependencies
 
+import System.FilePath
+
 procImage image = do 
 	let htmlFile  = (pagename image) ++ ".html"
 	let pdfFile  = (pagename image) ++ ".pdf"
-	depRes <- needUpdate htmlFile [image]
-	let up2date = isUpToDate depRes
-	liftIO $ showState (pagename image) depRes
-	unless up2date $ writeHtmlPage htmlFile (pagename image) (pagename image) content 
+	needsUpdate <- anyOlder image [htmlFile]
+	-- liftIO $ showState (pagename image) depRes
+	when needsUpdate $ writeHtmlPage htmlFile image (pagename image) content 
 	producedFile htmlFile
-	unless up2date $ writeLatexPage (pagename image) (pagename image) (pagename image) content 
+	when needsUpdate $ writeLatexPage image (pagename image) content 
 	producedFile pdfFile
   where	content  = [Header 1 (pagename image),
 	            Paragraph [Image link (pagename image)],
 	            Paragraph [LinkElem (DLLink link)]]
-	link = backDir (pagename image) ++ image	
+	link = backDir image </> pageInput image
+
 

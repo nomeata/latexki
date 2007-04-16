@@ -9,24 +9,23 @@ import System.Directory
 import System
 import Maybe
 import List
+import qualified Data.ByteString.Lazy.Char8 as B
 
 
-writeLatexPage file title basename body = do
-  liftIO  . (writeFileSafe (file ++ ".tex")) =<< latexFile title basename body
+writeLatexPage page title body = do
+  liftIO  . (writeFileSafe (pageOutput page ".tex")) =<< latexFile page title body
   liftIO $ do
-	  cwd <- getCurrentDirectory
 	  readNull <- return.Just =<< openFile "/dev/null" ReadMode
-	  writeLog <- return.Just =<< openFile (file ++ ".output") WriteMode
-	  safeChdir (dirname file)
-	  err <- runProcess "pdflatex" [(filename file)++".tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
-	  setCurrentDirectory cwd
+	  writeLog <- return.Just =<< openFile (pageOutput page ".output") WriteMode
+	  err <- inTargetDir page $ 
+	  	runProcess "pdflatex" [fileRelative page] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
 	  case err of
-		ExitFailure _ -> putStrLn (pagename file ++ ": LaTeX failed ("++show err ++")")
+		ExitFailure _ -> putStrLn (pagename page ++ ": LaTeX failed ("++show err ++")")
 		ExitSuccess   -> return ()
   
 
 
-latexFile title basename body = return $
+latexFile page title  body = return $
   "\\documentclass{article}\n"++
   "\\usepackage[utf8]{inputenc}\n"++
   "\\usepackage[T1]{fontenc}\n"++
@@ -84,7 +83,8 @@ aHref href txt = "\\href{"++href++"}{"++txt++"}"
 render (Paragraph text)  = "\n\n"++ (                       concatMap renderInline   text) ++"\n\n"
 render (EnumList  items) = env "enumerate" (concatMap (("\\item "++).(concatMap renderInline)) items)
 render (ItemList  items) = env "itemize"   (concatMap (("\\item "++).(concatMap renderInline)) items)
-render (PreFormat str)   = env "verbatim"  (str)
+render (PreFormat str)   = env "verbatim"  (escape str)
+render (PreFormatBS bs)  = env "verbatim"  (escape (B.unpack bs))
 render (HLine)           = "\n\\hrule\n"
 render (Header 1 text) = "\\section*{"++       escape text ++"}"
 render (Header 2 text) = "\\subsection*{"++    escape text ++"}"
@@ -106,13 +106,13 @@ renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link
 renderInline (Image src alt) = "\\includegraphics[width=\\linewidth]{"++ escape src ++"}"
 
-renderLink (WikiLink base txt) = aHref (escape (base ++".html")) (escape txt) {-++ more
+renderLink (WikiLink page txt) = aHref (escape (pageOutput page "html")) (escape txt) {-++ more
   where with ext          = escape (base ++"."++ ext)
  	more | null exts  = ""
              | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
 -}
 
-renderLink (NewLink base)       = aHref (escape (editLink base)) (escape (base ++ "(new)")) 
+renderLink (NewLink page)       = aHref (escape (editLink page)) (escape (pagename page ++ "(new)")) 
 renderLink (DLLink file)        = aHref (escape file)            (escape (file ++ "(download)")) 
 renderLink (PlainLink href txt) = aHref (escape href)            (escape txt)
 
