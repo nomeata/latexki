@@ -23,15 +23,14 @@ module Common (
 	pageSource,
 
 	WikiInfo(..),
-	pagenames,
 	getSiteMap,
 	getWikiConfig,
 	getMainTitle,
-	getPagenames,
 	getOutputs,
 	getRecentChanges,
 	getExistingOutput,
 	pageExts,
+	lookupPage,
 
 	logfilename,
 	datadir,
@@ -44,10 +43,11 @@ module Common (
 	backDir,
 	editLink,
 	editLinkLines,
+	namedNewLink,
 	newLink,
 	inTargetDir,
+	inDir,
 	fileRelative,
-	safeChdir,
 	writeFileSafe,
 	safeRemoveFile,
 
@@ -96,7 +96,7 @@ type FileProducer a = WriterT [FilePath] (
 --			)
 		)
 	) a
-type FileProcessor = PageInfo -> FileProducer ()
+type FileProcessor = PageInfo -> FileProducer ( [ ([FilePath], FileProducer()) ] )
 
 runFileProducer :: WikiInfo -> FileProducer () -> IO [FilePath]
 runFileProducer info producer =
@@ -145,7 +145,7 @@ pagename PageInfo {smPageName = PageName pn} = pn
 
 de2sm de = PageInfo {
 		smPageName = PageName (dropExtensions (deFileName de)),
-		smType     =           takeExtensions (deFileName de),
+		smType     = dropWhile (=='.') $ takeExtensions (deFileName de),
 		smModTime  = deModTime de,
 		smContent  = deFileContent de
 		}
@@ -167,9 +167,6 @@ getExistingOutput = existingOutput `liftM` getWi
 
 getMainTitle = getWikiConfig >>= return . fromMaybe "A Wiki" . lookup "title"
 
-pagenames = map smPageName . sitemap
-getPagenames = getWi >>= return . pagenames
-
 getOutputs = concatMap pageOutputs `liftM` getSiteMap 
 
 pageSource page = smContent page
@@ -180,14 +177,20 @@ pageInput PageInfo {smPageName = pn, smType = t}      = datadir </> outputFile p
 
 outputFile (PageName base) ext = base <.> ext
 
-inTargetDir page action = do
-	  cwd <- getCurrentDirectory
-	  safeChdir (takeDirectory (pagename page))
-	  ret <- action
-	  setCurrentDirectory cwd
-	  return ret
+inDir dir action = do
+	if not (null dir) then  do
+		cwd <- liftIO $ getCurrentDirectory
+		liftIO $ print $ "Changing Dir to "++dir
+		liftIO $ safeChdir dir
+		ret <- action
+		liftIO $ print $ "Changing Dir to "++cwd
+		liftIO $ setCurrentDirectory cwd
+		return ret
+	  else  action
 
-lookupPage page = (listToMaybe . filter ((page ==) . smPageName)) `liftM` getSiteMap
+inTargetDir page  = inDir $ takeDirectory (pagename page)
+
+lookupPage page = listToMaybe . filter ((page ==) . smPageName) 
 
 pageExts page =  generated_by $ smType page
 
@@ -217,12 +220,13 @@ dirTrail' path = dirTrail' $ dropWhile (/='/')  path
 backDir' path = joinPath $ replicate (length (splitPath path) - 1) ".."
 backDir  page = backDir' (pagename page)
 
-editLink page  = backDir page </> "cgi/edit" </> pagename page
-newLink  page  = backDir page </> "cgi/edit"
+editLink page  =  "cgi/edit" </> pagename page
+namedNewLink page  =  "cgi/edit" </> page
+newLink =  "cgi/edit"
 fileRelative :: PageInfo -> String
 fileRelative page = backDir page </> pageInput page
 
-editLinkLines page from to  = backDir page ++ "cgi/edit/" ++ (pagename page) ++ "?lines=" ++ show from ++ "-" ++ show to
+editLinkLines page from to  = "cgi/edit/" ++ (pagename page) ++ "?lines=" ++ show from ++ "-" ++ show to
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x

@@ -12,9 +12,11 @@ import Directory
 import Monad
 import List
 
+import Dependencies
+import WikiData
 import Common
---import Wiki
---import Latex
+import Wiki
+import Latex
 import Generic
 import ImageFile
 import SVN
@@ -22,13 +24,13 @@ import ReadDir
 
 import Data.Map ((!))
 
+run_producer :: PageInfo -> FileProducer [ ([FilePath], FileProducer () ) ]
 run_producer page = producer (pageType page) page
 
-{-
+producer :: String -> PageInfo -> FileProducer [ ([FilePath], FileProducer () ) ]
 producer "tex"   = procTex 
 producer "latex" = producer "tex"
 producer ""      = procWiki
--}
 producer "css"   = procCopyGen 
 producer "png"   = procImage 
 producer "jpg"   = procImage
@@ -115,20 +117,30 @@ main = do
 	}
 
   putStr "Find out there is to do.."
-  let todo = sitemap wi -- Shortcut
+  let outdated = [] -- FIXME
   putStrLn "Done."
   
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
-  producedFiles <- runFileProducers wi $ map run_producer todo
+  producedFiles <- runFileProducer wi $ flip mapM_ (sitemap wi) $ \page -> do 
+	x <- return True
+  	actions <- run_producer page	
+	let force = page `elem` outdated
+  	flip mapM_ actions $ \(outputs, action) -> do
+		old <- or `liftM` mapM (isOlder page) outputs
+		flip mapM_ outputs producedFile 
+		when (force || old) $ do
+			liftIO $ putStrLn ("Generating outdated files: " ++ concat (intersperse ", " outputs))
+			action
 
-  putStrLn $ "Produced: "++show producedFiles
+  -- Debug:
+  --putStrLn $ "Produced: "++show producedFiles
 
   putStrLn "Cleaning up..."
   foundOutputs <- map deFileName `liftM` readDir ""
   let systemFiles = [logfilename]
       putStrExts   = [".log",".output"]
-      delete =  filter (\f -> not $ any (\e -> e `isSuffixOf` f) putStrExts) $
+      delete =  filter (\f -> not $ any (takeExtension f ==) putStrExts) $
       		filter (`notElem` producedFiles) $
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $

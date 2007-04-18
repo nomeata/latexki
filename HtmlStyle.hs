@@ -1,7 +1,10 @@
+{-# OPTIONS_GHC -fimplicit-params #-}
 module HtmlStyle (htmlPage, writeHtmlPage, tagP, tag, tagL, tagLP, aHref, escape) where
+
 
 import Common
 import WikiData
+import System.FilePath
 
 import Maybe
 import List
@@ -12,10 +15,11 @@ import qualified Data.ByteString.Lazy.Char8 as B
 writeHtmlPage file page title body = liftIO . (writeFileSafe file) =<< htmlPage page title body 
 
 htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (String)
-htmlPage page title body = do
+htmlPage page title body =  do
 	mainTitle <- getMainTitle
 	wikiConfig <- getWikiConfig
 	sitemap <- getSiteMap
+	let ?currentPage = page
 	let exts = pageExts page
 	let addmenuconf   = fromMaybe "" . lookup "addmenu" $ wikiConfig
 	    addmenu       =  (map (\f -> (f,"./"++f++".html") ) $ words addmenuconf) ++
@@ -34,14 +38,14 @@ htmlPage page title body = do
 				concatMap li ([	("Start page", "./") ] ++
 						addmenu                ++
 					      [ ("Edit this", editLink page),
-						("Create new page", newLink page)])
+						("Create new page", newLink)])
 			))
 		)++(
 			tagP "div" [("class","content")] (concatMap render body)
 		))
 	  )))
-	where li (t,l) = tag "li" $ aHref l $ t
-	      stylefile = backDir page ++ "latexki-style.css"
+  where	li (t,l) = tag "li" $ aHref l $ t
+      	stylefile = backDir page </> "latexki-style.css"
 
 tagP name params body | null body = "<"++name++par++"/>"
                       | otherwise = "<"++name++par++">"++body++"</"++name++">"
@@ -51,6 +55,7 @@ tagL name body= tagLP name [] body
 tagLP name params body= ["<"++name++par++">"]++body++["</"++name++">"]
 	where par = concatMap (\(p,v)-> " "++p++"=\""++v++"\"") params 
 
+aHrefRel href body = tagP "a" [("href", backDir ?currentPage </> href)] body
 aHref href body = tagP "a" [("href",href)] body
 
 escapes = [('<',"&lt;"),('>',"&gt;"),('&',"&amp;"),('"',"&quot;") ]
@@ -61,7 +66,6 @@ render (Paragraph text)  = tag "p"  (                       concatMap renderInli
 render (EnumList  items) = tag "ol" (concatMap (tag "li" . (concatMap renderInline)) items)
 render (ItemList  items) = tag "ul" (concatMap (tag "li" . (concatMap renderInline)) items)
 render (PreFormat str)   = tag "pre" (escape str)
-render (PreFormatBS bs)  = tag "pre" (escape (B.unpack bs))
 render (HLine)           = tag "hr" ""
 render (Header lev text) = tag ("h" ++ (show lev)) (escape text)
 render (RCElem changes)  = tagP "ol" [("id","recentChanges")] $ concatMap formatChange changes
@@ -84,9 +88,9 @@ renderLink (WikiLink page txt) = aHref (escape (pageOutput page "html")) (escape
              | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
    -}
 
-renderLink (NewLink page)       = aHref (escape (editLink page)) (escape (pagename page ++ "(new)")) 
-renderLink (DLLink file)        = aHref (escape file)            (escape (file ++ "(download)")) 
-renderLink (PlainLink href txt) = aHref (escape href)            (escape txt)
+renderLink (NewLink page)       = aHrefRel (escape (namedNewLink page)) (escape (page ++ "(new)")) 
+renderLink (DLLink file)        = aHrefRel (escape file)                (escape (file ++ "(download)")) 
+renderLink (PlainLink href txt) = aHref (escape href)                (escape txt)
 
 
 linkto a = aHref (escape a) (escape a)

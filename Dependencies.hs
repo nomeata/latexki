@@ -1,4 +1,7 @@
-module Dependencies (needUpdate, needUpdates, isUpToDate, DepResult(..), showState, anyOlder) where
+module Dependencies (
+	needUpdate, needUpdates, isUpToDate, DepResult(..), showState,
+	anyOlder, isOlder
+) where
 
 import Data.Monoid
 import System
@@ -42,10 +45,9 @@ needUpdate target deps = do
 	mconcat `fmap` mapM needUpdate' deps
 		 	
 
-anyOlder page targets = do
-	let sourceTime = Just $ getInputTime page
-	let isOlder target = do
-		targetTime <- getOutputTime target
-		return $ sourceTime > targetTime
-	or `fmap` mapM isOlder targets
+anyOlder page targets = or `fmap` mapM (isOlder page) targets
 
+isOlder page target = do
+	let sourceTime = Just $ getInputTime page
+	targetTime <- getOutputTime target
+	return $ sourceTime > targetTime

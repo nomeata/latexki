@@ -9,6 +9,7 @@ import Control.Concurrent
 import Data.List
 
 import WikiData
+import ReadDir
 import Common
 
 data PDFIndex = PDFIndex { pdfIndexTitle :: String, pdfIndexPage :: Int, pdfIndexSub :: [PDFIndex] } deriving (Show)
@@ -100,23 +101,13 @@ chapterFile file n = file ++ "." ++ (show n) ++ ".pdf"
 splitPDF file info = do
 	let n        = numberOfPages info
 	    chapters = zip [1..] (ranges n (pdfIndex info))
-	date1 <- getTime file
-	flip mapM chapters $ \(n,r) -> do
+	return $ flip map chapters $ \(n,r) -> do
 		let outfile = chapterFile file n
-		doit <- newer date1 outfile
-		when doit $ liftIO $ extractPDFPages file outfile r
-		return outfile
+		return (outfile, liftIO $ extractPDFPages file outfile r)
 
 -- We don’t want to parse the PDF if no change is expected, so just look for the files
 guessSplitPDF file = do
 	candits <- getExistingOutput
-	return $ filter (file `isPrefixOf`) $ map (drop 2) candits
-
-newer date file = do
-	date2 <- getTime file
-	if date > date2 then
-		return True
-	 else
-		return False
+	return $ filter (file `isPrefixOf`) $ map (deFileName) candits
 
 

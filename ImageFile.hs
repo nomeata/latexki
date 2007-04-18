@@ -10,15 +10,14 @@ import Dependencies
 
 import System.FilePath
 
+procImage :: FileProcessor
 procImage image = do 
 	let htmlFile  = (pagename image) ++ ".html"
 	let pdfFile  = (pagename image) ++ ".pdf"
-	needsUpdate <- anyOlder image [htmlFile]
-	-- liftIO $ showState (pagename image) depRes
-	when needsUpdate $ writeHtmlPage htmlFile image (pagename image) content 
-	producedFile htmlFile
-	when needsUpdate $ writeLatexPage image (pagename image) content 
-	producedFile pdfFile
+	return [
+		([htmlFile], writeHtmlPage htmlFile image (pagename image) content ),
+		([pdfFile], writeLatexPage image (pagename image) content)
+		]
   where	content  = [Header 1 (pagename image),
 	            Paragraph [Image link (pagename image)],
 	            Paragraph [LinkElem (DLLink link)]]

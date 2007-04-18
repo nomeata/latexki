@@ -9,6 +9,8 @@ import Char
 import Data.Monoid
 import Monad
 import Maybe
+import System.FilePath
+import qualified Data.ByteString.Lazy.Char8 as B
 
 import Common
 import HtmlStyle
@@ -20,19 +22,20 @@ alwaysUpdate text = mappend (if "!!sitemap!!" `subListOf` lc       then Always "
                             (if "!!recentchanges!!" `subListOf` lc then Always "RecentChanges" else UpToDate)
   where	lc = map toLower text
 
+procWiki :: FileProcessor
 procWiki wiki = do
-	let htmlFile = pagename wiki ++ ".html"
-	let pdfFile = pagename wiki ++ ".pdf"
-	content <- liftIO $ readFile wiki
-	depRes <- mappend (alwaysUpdate content) `fmap` needUpdate htmlFile [wiki]
-	let up2date = isUpToDate depRes
-	liftIO $ showState (pagename wiki) depRes
+	let htmlFile = pageOutput wiki "html"
+	let pdfFile = pageOutput wiki "pdf"
+	let content = B.unpack $ smContent wiki
+	--depRes <- mappend (alwaysUpdate content) `fmap` needUpdate htmlFile [wiki]
+	--let up2date = isUpToDate depRes
+	--liftIO $ showState (pagename wiki) depRes
 	wi <- getWi
-	let parsed  = parse wi $ map stripWhitespace $ lines content
-	unless up2date $ writeHtmlPage htmlFile (pagename wiki) (pagename wiki) parsed
-	producedFile htmlFile
-	unless up2date $ writeLatexPage (pagename wiki) (pagename wiki) (pagename wiki) parsed
-	producedFile pdfFile
+	let parsed = parse wi $ map stripWhitespace $ lines content
+	return [ 
+		([htmlFile], writeHtmlPage htmlFile wiki (pagename wiki) parsed),
+		([pdfFile],  writeLatexPage wiki  (pagename wiki) parsed)
+		]
 
 stripWhitespace = reverse.(dropWhile (==' ')).reverse
 
@@ -100,21 +103,27 @@ parseInline wi t | isBlockedLink	 = Text skword                 : parseInline wi
 isCamelCase []      = False
 isCamelCase (w:ord) = isUpper w && any isUpper ord && any isLower ord && all isAlphaNum (w:ord) && all isAscii (w:ord)
 
-mkLink wi a | a `elem` pagenames wi = WikiLink a a
-            | otherwise             = NewLink a
+mkPageLink wi page = WikiLink page (pagename page)
+
+mkLink :: WikiInfo -> String -> Link
+mkLink wi a = case lookupPage (PageName a) (sitemap wi) of 
+	    	Just page -> WikiLink page a
+	        Nothing   -> NewLink a
 
 isValidPagename = all (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
 parseSpecial wi l = case map toLower $ takeout "!!" l of
 			"hello"   -> Paragraph [Text "Hello World"]
 			-- The next line is a beast
-			"sitemap" -> ItemList $ map ((:[]) . LinkElem . (mkLink wi)) $ sort $ pagenames wi
+			"sitemap" -> ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
 			"recentchanges" -> RCElem (map (parseRC wi) (recentChanges wi))
 			huh       -> Paragraph [Text ("Unknown Command \""++huh++"\"")]
 
 parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg
   where msg = parseInline wi raw_msg
-  	links = map (mkLink wi . pagename) paths
+  	links = flip map paths $ \path -> case lookupPage (PageName (dropExtensions path)) (sitemap wi) of
+			Just page -> mkPageLink wi page
+			Nothing   -> NewLink (dropExtensions path)
 
 encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
 takeout  sub    = (drop (length sub)).reverse.(drop (length sub)).reverse

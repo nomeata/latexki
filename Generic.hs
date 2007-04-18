@@ -15,19 +15,17 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 procGeneric isBinary page = do 
 	let htmlFile  = pageOutput page "html"
-	needsUpdate <- anyOlder page [htmlFile]
+	-- needsUpdate <- anyOlder page [htmlFile]
 	--liftIO $ showState (pagename page) depRes
-	when needsUpdate $ do
-		let source = pageSource page
-		let content = if isNothing isBinary then 
-			if isReadable source
-					then pre source
-					else binary
-			else	if fromJust isBinary
-					then binary
-					else pre source
-		writeHtmlPage htmlFile page (pagename page) content 
-	producedFile htmlFile
+	let source = pageSource page
+	let content = if isNothing isBinary then 
+		if isReadable source
+				then pre source
+				else binary
+		else	if fromJust isBinary
+				then binary
+				else pre source
+	return [ ([htmlFile], writeHtmlPage htmlFile page (pagename page) content) ]
   where	isReadable = ('\0' `B.notElem`)
   	pre source = [Header 1 (pagename page),
 	              Paragraph [LinkElem (DLLink link)],
@@ -37,8 +35,9 @@ procGeneric isBinary page = do
 	            Paragraph [LinkElem (DLLink link)]]
 	link = backDir page </> pageInput page
 
-procCopyGen page = procCopy page >> procGeneric Nothing page 
+procCopyGen page = liftM2 (++) (procCopy page) (procGeneric Nothing page)
 
-procCopy page = liftIO (copyFile (pageInput page) outfile) >> producedFile outfile
+procCopy :: FileProcessor
+procCopy page = return [([outfile],  liftIO (copyFile (pageInput page) outfile))]
   where	outfile = pageOutput page (pageType page)
 

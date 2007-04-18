@@ -5,15 +5,19 @@ import Monad
 import System.Directory
 import System.Process
 import System.IO
+import System.FilePath
 import System
 import Char
 import List
+import qualified Data.ByteString.Lazy.Char8 as B
 
 import WikiData
 import Common
 import HtmlStyle
 import Dependencies
 import PDF
+
+
 
 whileOk []     = return ExitSuccess
 whileOk (x:xs) = do
@@ -22,16 +26,38 @@ whileOk (x:xs) = do
 		ExitSuccess -> whileOk xs
 		otherwise   -> return res
 
+uncomment t | B.null t                          = B.empty
+            | t == B.singleton '\\'             = t
+	    | B.singleton '\\' `B.isPrefixOf` t = B.head (B.tail t) `B.cons` uncomment (B.tail (B.tail t))
+	    | B.singleton '%'  `B.isPrefixOf` t = B.empty
+	    | True                              = B.head t `B.cons` uncomment (B.tail t)
+{-
 uncomment ""            = ""
 uncomment "\\"          = "\\"
 uncomment ('\\':c:line) = '\\':c:uncomment line
 uncomment ('%':_)       = ""
 uncomment (c:line)      = c:uncomment line
-	
-findSimpleCommands ""                       					= []
-findSimpleCommands ('\\':'%':rest) 						= findSimpleCommands rest
-findSimpleCommands ('%':rest) 							= findSimpleCommands rest'
-	where (_,rest')		= span (/='\n') rest
+-}
+
+findSimpleCommands :: B.ByteString -> [ (B.ByteString, B.ByteString) ]
+findSimpleCommands t | B.null t				= []
+		     | B.singleton '\\' == t            = []
+		     | B.pack "\\%" `B.isPrefixOf` t	= findSimpleCommands $ B.drop 2 t
+		     | B.singleton '%' `B.isPrefixOf` t   = findSimpleCommands $ safeTail $ B.dropWhile (/= '\n') t
+		     | B.singleton '\\' `B.isPrefixOf` t  = (command, param) : findSimpleCommands  rest
+		         where	(command,optParamRest) = B.span isAlpha (B.tail t)
+				paramRest | B.singleton '[' `B.isPrefixOf` optParamRest =
+						safeTail $ B.dropWhile (/= ']') optParamRest
+					  | otherwise  =
+					  	optParamRest
+				(param,rest) | B.singleton '{' `B.isPrefixOf` paramRest =
+						let (param',rest') = B.span (/= '}') paramRest in (safeTail param', safeTail rest')
+					     | otherwise =
+					     	(B.empty,paramRest)
+safeTail bs | B.null bs = bs
+            | otherwise = B.tail bs
+			        
+{-
 findSimpleCommands ('\\':rest1) | null rest5					= [(command, "")]
 				| n == '{'      				= (command,param) :findSimpleCommands rest3
 				| n == '[' && (length rest3') > 2 && m == '{' 	= (command,param2):findSimpleCommands rest4
@@ -45,12 +71,13 @@ findSimpleCommands ('\\':rest1) | null rest5					= [(command, "")]
 	      (_:m:rest3'')     = rest3'
 	      (param2,rest4)    = span (/='}') rest3''
 findSimpleCommands (_:rest)                       				= findSimpleCommands rest	      
-
+-}
 
 depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
 		("usepackage",[".sty"]), ("includegraphics",["",".png"] ) ]
+{-
 findDeps tex = do
-	file <- liftIO $ readFile tex
+	let file = B.unpack $ smContent tex
 	let commands = findSimpleCommands file
 	    candits = catMaybes $  map (\(c,f) -> case lookup c depCmds of 
 	  			        		Just exts -> Just $ (f,exts)
@@ -58,26 +85,26 @@ findDeps tex = do
 	files <- liftM (filter (/=tex).catMaybes) $ mapM find candits
 	additional <- liftM (nub.sort.concat) $ mapM findDeps files
 	return (tex:additional)
- where  addpath = map ((dirname tex++"/") ++ )
-	find (candit,exts) = liftM listToMaybe $ filterM doesExist [ 
-			dir ++ "/" ++ candit ++ ext |
+ where  find (candit,exts) = liftM listToMaybe $ filterM doesFileExist [ 
+			dir </> candit <.> ext |
 				dir <- dirTrail tex,
 				ext <- exts
 			]
+-}	
 
+{-
 texInclCmds = ["input","include"]
+prepareStripped :: PageInfo -> FileProducer ()
 prepareStripped tex = do
-	file <- liftIO $ readFile tex
+	let file = B.unpack $ smContent tex
 	let commands = findSimpleCommands file
 	    candits = map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
-	files <- liftM catMaybes $ mapM find candits
+	files <- liftIO $ liftM catMaybes $ mapM find candits
 	sequence (map snd files)
-	mapM (\(f,_) -> prepareStripped f) files
-	return ()
- where  addpath = map (datadir++)
-	find candit = liftM listToMaybe $ filterM (doesExist.fst) [ 
-			(dir ++ "/" ++ candit ++ suf, m (dir ++ "/" ++ candit ++ suf) (candit ++ ".tex")) |
-				dir <- dirTrail tex,
+	mapM_ (\(f,_) -> prepareStripped f) files
+ where  find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
+			(dir </> candit <.> suf, m (dir </> candit <.> suf) (candit <.> ".tex")) |
+				dir <- dirTrail (fileRelative tex),
 				(suf,m) <- methods
 			]
 	methods = [ (".part.tex", copy), (".tex",strip) ]
@@ -92,112 +119,100 @@ prepareStripped tex = do
 		mainPart = unlines . takeWhile (not. subListOf "\\end{document}") . stail . dropWhile (not. subListOf "\\begin{document}") . lines
 	        stail [] = []
 	        stail l  = tail l
-	
+-}	
 
 
-hasCommand command tex = liftIO $ do
-	file <- readFile tex
-	return $ command  `elem` (findSimpleCommands file)
+hasCommand command tex = command  `elem` findSimpleCommands (smContent tex)
 
-usesPST = hasCommand ("usepackage", "pst-pdf")
-usesIndex = hasCommand ("printindex", "")
+usesPST = hasCommand (B.pack "usepackage", B.pack "pst-pdf")
+usesIndex = hasCommand (B.pack "printindex", B.empty)
 
 
 procTex :: FileProcessor
 procTex tex = do
-	let htmlFile = pagename tex ++ ".html"
-	    pdfFile  = pagename tex ++ ".pdf"
-	    pngFile  = pagename tex ++ ".png"
-	depRes <- needUpdates [htmlFile,pdfFile,pngFile] =<< findDeps tex
-	let up2date = isUpToDate depRes
-	liftIO $ showState (pagename tex) depRes
-	if not up2date then do
+	let htmlFile = pageOutput tex "html"
+	    pdfFile  = pageOutput tex "pdf"
+	    pngFile  = pageOutput tex "png"
+	--depRes <- needUpdates [htmlFile,pdfFile,pngFile] =<< findDeps tex
+	--let up2date = isUpToDate depRes
+	--liftIO $ showState (pagename tex) depRes
+	return [ ( [htmlFile, pdfFile, pngFile], do
+		
 		ok <- genPDF tex 
-		when ok $ producedFile pdfFile
-		when ok $ producedFile pngFile
 		if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
-			splitPDF pdfFile pdfInfo >>= producedFiles
+			--splitPDF pdfFile pdfInfo >>= producedFiles
 			genHTML tex ok (Just pdfInfo)
 		 else 
 			genHTML tex ok Nothing
-		producedFile htmlFile
-	   else do
-		producedFile pdfFile
-		producedFile pngFile
-		producedFile htmlFile
-		guessSplitPDF pdfFile >>= producedFiles
-	return ()
+		) ]
 
 
+genPDF :: PageInfo -> FileProducer (Bool)
 genPDF tex =  do 
-	cwd <- liftIO $ getCurrentDirectory
-	liftIO $ safeChdir (dirname $ pagename tex)
-	prepareStripped realsource
+	--prepareStripped tex
 	err <- liftIO $ whileOk =<< runLatex
-	liftIO $ setCurrentDirectory cwd
 	case err of
 		ExitFailure _ -> liftIO $ putStrLn (pagename tex ++ ": LaTeX failed ("++show err ++")")
 		ExitSuccess   -> return ()
 	return $ err == ExitSuccess
-  where realsource = backDir (pagename tex) ++ tex
-  	realbasename = filename $ pagename tex
-  	pdffile  = pagename tex ++ ".pdf"
+  where realsource = fileRelative tex
+  	--realbasename = dropExtensions realsource
+	output   = pageOutput tex "output"
+	outDir   = takeDirectory (pagename tex)
+  	pdffile  = pageOutput tex "pdf"
   	runLatex = do
 
 	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
 	
-	let runit c a = do
-		let output = realbasename ++ ".output"
+	let runit dir c a = do
+		--let output = realbasename ++ ".output"
 		appendFile output $ "\nRunning "++c++" "++(concat (intersperse " " a))++
 				    " in an env with "++(show (length env))++" entries:\n"
   		readNull <- openFile "/dev/null" ReadMode
-	  	writeLog <- openFile (realbasename  ++ ".output") AppendMode
-		err <- runProcess c a Nothing (Just env) (Just readNull) (Just writeLog) (Just writeLog) >>=
+	  	writeLog <- openFile output AppendMode
+		err <- inDir dir $
+			runProcess c a Nothing (Just env) (Just readNull) (Just writeLog) (Just writeLog) >>=
 			waitForProcess
 		appendFile output $ "Result: "++(show err)++"\n"
 		return err
 
 
 	let clearOutput = do
-		safeRemoveFile $ realbasename ++ ".output"
+		safeRemoveFile $ output
 		return ExitSuccess
 
-	usesPST' <- usesPST realsource
-	let pstqueue = if usesPST'
+	let pstqueue = if usesPST tex
 			then [
-				runit "/usr/bin/latex" [ realsource ],
-				runit "/usr/bin/dvips" [ (realbasename ++ ".dvi") , "-o", (realbasename ++ "-pics.ps") ],
-				runit "/usr/bin/ps2pdf" [ (realbasename ++ "-pics.ps") ]
+				runit outDir "/usr/bin/latex" [ realsource ],
+				runit ""     "/usr/bin/dvips" [ pageOutput tex "dvi", "-o", pageOutput tex "pics.ps" ],
+				runit ""     "/usr/bin/ps2pdf" [ pageOutput tex "pics.ps" ]
 	        	]
 			else []
 	
-	usesIndex' <- usesIndex realsource 
-	let indexqueue = if usesIndex'
+	let indexqueue = if usesIndex tex
 			then [
-				runit "/usr/bin/makeindex" [ (realbasename ++ ".idx") ]
+				runit ""     "/usr/bin/makeindex" [ pageOutput tex "idx" ]
 			]
 			else []
 	
-	let latexrun = 		runit "/usr/bin/pdflatex" [realsource]
+	let latexrun = 		runit outDir "/usr/bin/pdflatex" [realsource]
 
-	let pngrun =		runit "/usr/bin/convert" [ "-verbose", realbasename++".pdf[0]", realbasename++".png" ] 
+	let pngrun =		runit ""     "/usr/bin/convert" [ "-verbose", pdffile ++ "[0]", pageOutput tex "png" ] 
 	
-	return $[clearOutput] ++
-		pstqueue ++
-		[latexrun] ++
-		indexqueue ++
-		replicate 2 latexrun ++
-		[pngrun]
-
-
+	return $ [clearOutput] ++
+		 pstqueue ++
+		 [latexrun] ++
+		 indexqueue ++
+		 replicate 2 latexrun ++
+		 [pngrun]
 
 genHTML tex ok pdfInfo = do 
-	source <- liftIO $ readFile tex
+	let source = smContent tex
 	let index = getIndex tex source
 	    title = getTitle tex source
-	    titleline = [Header 1 ("Latex File: "++ title)]
-	writeHtmlPage target (pagename tex) title $ titleline ++ content ++ index ++ pdfIndex ++ preview
+	    titleline = [Header 1 (B.pack "Latex File: " `B.append` title)]
+	writeHtmlPage target tex title $ titleline ++ content ++ index ++ pdfIndex ++ preview
   where pdfIndex = case pdfInfo of
 		Nothing -> []
 		Just info -> formatPDFInfo pdfFile info
@@ -221,12 +236,12 @@ genHTML tex ok pdfInfo = do
 			]
                 | otherwise          = [
 			]
-	pdfFile = (pagename tex) ++ ".pdf"				      
-	logFile = (pagename tex) ++ ".log" 
-	outFile = (pagename tex) ++ ".output" 
-	pngFile = (pagename tex) ++ ".png"				      
-	texFile = (backDir tex) ++ tex
-	target  = (pagename tex) ++ ".html" 
+	pdfFile = pageOutput tex "pdf"
+	logFile = pageOutput tex "log"
+	outFile = pageOutput tex "output"
+	pngFile = pageOutput tex "png"
+	target  = pageOutput tex "html"
+	texFile = fileRelative tex
 
 
 findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]
@@ -236,13 +251,16 @@ findspans first extract list = findspans' first (map extract list) 1 0
         findspans' current (Just new:xs) a b =  ((a,b), current) : findspans' new     xs (b+1) (b+1)
         findspans' current (Nothing :xs) a b =                     findspans' current xs  a    (b+1)
 
-getIndex tex = format . extract . map uncomment . lines 
-  where	extract = findspans "Preamble" extract_chapter 
+getIndex tex = format . extract . map uncomment . B.lines 
+  where	extract = findspans (B.pack "Preamble") extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
-				                guard $ command =="chapter"
+				                guard $ command == B.pack "chapter"
 				                return param
 	format = (Header 2 "Index-Preview":) . (:[]) . ItemList . map format'
-	  where format' ((a,b),t) = [Text (t++" "),LinkElem (PlainLink (editLinkLines (pagename tex) a b) "(bearbeiten)")]
+	  where format' ((a,b),t) = [
+	  				Text (t++" "),
+					LinkElem (PlainLink (editLinkLines tex a b) "(bearbeiten)"
+					)]
 
-getTitle tex = fromMaybe (pagename tex) . lookup "title" . findSimpleCommands  
+getTitle tex = fromMaybe (B.pack (pagename tex)) . lookup (B.pack "title") . findSimpleCommands  
 
