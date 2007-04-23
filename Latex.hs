@@ -40,20 +40,21 @@ uncomment (c:line)      = c:uncomment line
 -}
 
 findSimpleCommands :: B.ByteString -> [ (B.ByteString, B.ByteString) ]
-findSimpleCommands t | B.null t				= []
-		     | B.singleton '\\' == t            = []
-		     | B.pack "\\%" `B.isPrefixOf` t	= findSimpleCommands $ B.drop 2 t
-		     | B.singleton '%' `B.isPrefixOf` t   = findSimpleCommands $ safeTail $ B.dropWhile (/= '\n') t
-		     | B.singleton '\\' `B.isPrefixOf` t  = (command, param) : findSimpleCommands  rest
-		         where	(command,optParamRest) = B.span isAlpha (B.tail t)
-				paramRest | B.singleton '[' `B.isPrefixOf` optParamRest =
-						safeTail $ B.dropWhile (/= ']') optParamRest
-					  | otherwise  =
-					  	optParamRest
-				(param,rest) | B.singleton '{' `B.isPrefixOf` paramRest =
-						let (param',rest') = B.span (/= '}') paramRest in (safeTail param', safeTail rest')
-					     | otherwise =
-					     	(B.empty,paramRest)
+findSimpleCommands t | B.null t				 = []
+		     | B.singleton '\\' == t             = []
+		     | B.pack "\\%" `B.isPrefixOf` t	 = findSimpleCommands $ B.drop 2 t
+		     | B.singleton '%' `B.isPrefixOf` t  = findSimpleCommands $ safeTail $ B.dropWhile (/= '\n') t
+		     | B.singleton '\\' `B.isPrefixOf` t = (command, param) : findSimpleCommands  rest
+		     | otherwise                         = findSimpleCommands $ B.tail t
+ where	(command,optParamRest) = B.span isAlpha (B.tail t)
+	paramRest | B.singleton '[' `B.isPrefixOf` optParamRest =
+			safeTail $ B.dropWhile (/= ']') optParamRest
+		  | otherwise  =
+			optParamRest
+	(param,rest) | B.singleton '{' `B.isPrefixOf` paramRest =
+			let (param',rest') = B.span (/= '}') paramRest in (safeTail param', safeTail rest')
+		     | otherwise =
+			(B.empty,paramRest)
 safeTail bs | B.null bs = bs
             | otherwise = B.tail bs
 			        
@@ -141,7 +142,7 @@ procTex tex = do
 		ok <- genPDF tex 
 		if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
-			--splitPDF pdfFile pdfInfo >>= producedFiles
+			splitPDF pdfFile pdfInfo
 			genHTML tex ok (Just pdfInfo)
 		 else 
 			genHTML tex ok Nothing
@@ -212,36 +213,36 @@ genHTML tex ok pdfInfo = do
 	let index = getIndex tex source
 	    title = getTitle tex source
 	    titleline = [Header 1 (B.pack "Latex File: " `B.append` title)]
-	writeHtmlPage target tex title $ titleline ++ content ++ index ++ pdfIndex ++ preview
+	writeHtmlPage target tex (B.unpack title) $ titleline ++ content ++ index ++ pdfIndex ++ preview
   where pdfIndex = case pdfInfo of
 		Nothing -> []
 		Just info -> formatPDFInfo pdfFile info
         content | ok = [
-			 Paragraph [Text "File successfully created:"],
-			 ItemList [[LinkElem (PlainLink pdfFile "PDF-File")],
-			           [LinkElem (PlainLink logFile "Latex-Logfile")],
-			           [LinkElem (PlainLink outFile "Latex-Output")],
-			           [LinkElem (PlainLink texFile "Latex-Source")]]
+			 Paragraph [Text $ B.pack "File successfully created:"],
+			 ItemList [[LinkElem (PlainLink (B.pack pdfFile) (B.pack "PDF-File"))],
+			           [LinkElem (PlainLink logFile (B.pack "Latex-Logfile"))],
+			           [LinkElem (PlainLink outFile (B.pack "Latex-Output"))],
+			           [LinkElem (PlainLink texFile (B.pack "Latex-Source"))]]
 			]
                 | otherwise          = [	
-			 Paragraph [Text ("File not successfully created:")],
-			 ItemList [[Text "PDF-File (?)"],
-			           [LinkElem (PlainLink logFile "Latex-Logfile")],
-			           [LinkElem (PlainLink outFile "Latex-Output")],
-			           [LinkElem (PlainLink texFile "Latex-Source")]]
+			 Paragraph [Text (B.pack "File not successfully created:")],
+			 ItemList [[Text $ B.pack "PDF-File (?)"],
+			           [LinkElem (PlainLink logFile (B.pack "Latex-Logfile"))],
+			           [LinkElem (PlainLink outFile (B.pack "Latex-Output"))],
+			           [LinkElem (PlainLink texFile (B.pack "Latex-Source"))]]
 			]
         preview | ok = [
-			 Header 2 "Preview",
-			 Paragraph [Image pngFile "Preview"]
+			 Header 2 (B.pack "Preview"),
+			 Paragraph [Image pngFile (B.pack "Preview")]
 			]
                 | otherwise          = [
 			]
 	pdfFile = pageOutput tex "pdf"
-	logFile = pageOutput tex "log"
-	outFile = pageOutput tex "output"
-	pngFile = pageOutput tex "png"
+	logFile = B.pack $ pageOutput tex "log"
+	outFile = B.pack $ pageOutput tex "output"
+	pngFile = B.pack $ pageOutput tex "png"
 	target  = pageOutput tex "html"
-	texFile = fileRelative tex
+	texFile = B.pack $ fileRelative tex
 
 
 findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]
@@ -256,10 +257,10 @@ getIndex tex = format . extract . map uncomment . B.lines
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
 				                guard $ command == B.pack "chapter"
 				                return param
-	format = (Header 2 "Index-Preview":) . (:[]) . ItemList . map format'
+	format = (Header 2 (B.pack "Index-Preview"):) . (:[]) . ItemList . map format'
 	  where format' ((a,b),t) = [
-	  				Text (t++" "),
-					LinkElem (PlainLink (editLinkLines tex a b) "(bearbeiten)"
+	  				Text (t `B.append` B.pack " "),
+					LinkElem (PlainLink (B.pack $ editLinkLines tex a b) (B.pack "(bearbeiten)")
 					)]
 
 getTitle tex = fromMaybe (B.pack (pagename tex)) . lookup (B.pack "title") . findSimpleCommands  

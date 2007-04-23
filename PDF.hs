@@ -1,4 +1,4 @@
-module PDF (splitPDF, guessSplitPDF, formatPDFInfo, getPDFInfo,  PDFData(..), PDFIndex(..)) where
+module PDF (splitPDF, formatPDFInfo, getPDFInfo,  PDFData(..), PDFIndex(..)) where
 
 import Data.Maybe
 import Control.Monad
@@ -7,6 +7,7 @@ import System.Process
 import System.IO
 import Control.Concurrent
 import Data.List
+import qualified Data.ByteString.Lazy.Char8 as B
 
 import WikiData
 import ReadDir
@@ -36,8 +37,17 @@ getField line = do
 
 putInShape :: ([Fields],[Fields]) -> PDFData
 putInShape (index_raw, meta) = PDFData { numberOfPages = number, pdfIndex = index }
-  where	number = nOfPages meta
-        index  = unfoldElems 1 (groupIndex index_raw)
+  where	number      = nOfPages meta
+        real_index  = unfoldElems 1 (groupIndex index_raw)
+	index | null real_index                      = []
+	      | first_chapter == 1 = real_index
+	      | first_chapter  > 1 = first_elem : real_index
+	first_elem = PDFIndex {
+		pdfIndexTitle = "(First Pages)",
+		pdfIndexPage = 1,
+		pdfIndexSub = []
+		}
+	first_chapter = pdfIndexPage (head real_index)
 
 groupIndex :: [Fields] -> [[Fields]]
 groupIndex = groupBy (\_ f -> not $ isTitle f)
@@ -52,8 +62,11 @@ page  (Page l:_)  = l
 page  (_:x)       = page x
 
 unfoldElem :: Int -> [[Fields]] -> PDFIndex
-unfoldElem l (this:sub) = PDFIndex { pdfIndexTitle = title this, pdfIndexPage = page this,
-				       pdfIndexSub = unfoldElems (l+1) sub }
+unfoldElem l (this:sub) = PDFIndex {
+	pdfIndexTitle = title this,
+	pdfIndexPage = page this,
+	pdfIndexSub = unfoldElems (l+1) sub
+	}
 
 unfoldElems :: Int -> [[Fields]] -> [PDFIndex]
 unfoldElems l = map (unfoldElem l) . groupBy (\_ n -> (level n > l))
@@ -71,13 +84,17 @@ getPDFInfo file = do
 	return $ parseDumpData info
 
 formatPDFInfo file info = [
-	Header 3 "PDF-Index",
-	Paragraph $ [Text $ "This PDF-File has "++show(numberOfPages info)++" pages"],
-	ItemList $ (firstElem:) $ map formatPDFIndex $ zip [2..] $ pdfIndex info
-	]
- where	firstElem = [LinkElem $ PlainLink (subfile 1) "(First Pages)" ]
- 	formatPDFIndex (n, (PDFIndex title page sub)) = [Text title, Text " ",
-		LinkElem $ PlainLink (subfile n)  $ "(Page "++ show page++")"
+	Header 3 (B.pack "PDF-Index"),
+	Paragraph $ [Text $ B.pack $ "This PDF-File has "++show(numberOfPages info)++" pages"]] ++
+	if not ( null (pdfIndex info) ) then
+		[ItemList $  map formatPDFIndex $ zip [1..] $ pdfIndex info ]
+	else
+		[]
+
+ where	formatPDFIndex (n, (PDFIndex title page sub)) = [
+		Text (B.pack title),
+		Text (B.singleton ' '),
+		LinkElem $ PlainLink (B.pack (subfile n)) $ B.pack $ "(Page "++ show page++")"
 		]
         subfile n = chapterFile file n
 
@@ -94,20 +111,14 @@ ranges n (x:xs) | pdfIndexPage x > 1 = (1, pdfIndexPage x - 1) : ranges' n (x:xs
                 | otherwise          =                           ranges' n (x:xs)
 ranges' n [] = []
 ranges' n [last] =   [(pdfIndexPage last, n)]
-ranges' n (x:y:xs) = (pdfIndexPage x,pdfIndexPage y - 1 ) : ranges' n (y:xs)
+ranges' n (x:y:xs) = (pdfIndexPage x,next) : ranges' n (y:xs)
+  where next = max (pdfIndexPage x) (pdfIndexPage y - 1)
 
 chapterFile file n = file ++ "." ++ (show n) ++ ".pdf"
 
 splitPDF file info = do
 	let n        = numberOfPages info
 	    chapters = zip [1..] (ranges n (pdfIndex info))
-	return $ flip map chapters $ \(n,r) -> do
+	flip mapM_ chapters $ \(n,r) -> do
 		let outfile = chapterFile file n
-		return (outfile, liftIO $ extractPDFPages file outfile r)
-
--- We don’t want to parse the PDF if no change is expected, so just look for the files
-guessSplitPDF file = do
-	candits <- getExistingOutput
-	return $ filter (file `isPrefixOf`) $ map (deFileName) candits
-
-
+		liftIO $ extractPDFPages file outfile r

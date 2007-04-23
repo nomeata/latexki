@@ -27,13 +27,13 @@ procGeneric isBinary page = do
 				else pre source
 	return [ ([htmlFile], writeHtmlPage htmlFile page (pagename page) content) ]
   where	isReadable = ('\0' `B.notElem`)
-  	pre source = [Header 1 (pagename page),
+  	pre source = [Header 1 (B.pack (pagename page)),
 	              Paragraph [LinkElem (DLLink link)],
-	  	      Header 2 "Source",
-		      PreFormatBS source]
-  	binary   = [Header 1 (pagename page),
+	  	      Header 2 (B.pack "Source"),
+		      PreFormat source]
+  	binary   = [Header 1 (B.pack (pagename page)),
 	            Paragraph [LinkElem (DLLink link)]]
-	link = backDir page </> pageInput page
+	link = B.pack (backDir page </> pageInput page)
 
 procCopyGen page = liftM2 (++) (procCopy page) (procGeneric Nothing page)
 

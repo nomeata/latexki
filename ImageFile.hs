@@ -9,6 +9,8 @@ import LatexStyle
 import Dependencies
 
 import System.FilePath
+import qualified Data.ByteString.Lazy.Char8 as B
+
 
 procImage :: FileProcessor
 procImage image = do 
@@ -18,9 +20,9 @@ procImage image = do
 		([htmlFile], writeHtmlPage htmlFile image (pagename image) content ),
 		([pdfFile], writeLatexPage image (pagename image) content)
 		]
-  where	content  = [Header 1 (pagename image),
-	            Paragraph [Image link (pagename image)],
+  where	content  = [Header 1 (B.pack (pagename image)),
+	            Paragraph [Image link (B.pack (pagename image))],
 	            Paragraph [LinkElem (DLLink link)]]
-	link = backDir image </> pageInput image
+	link = B.pack (backDir image </> pageInput image)
 
 

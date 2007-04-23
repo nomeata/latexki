@@ -35,6 +35,7 @@ producer "css"   = procCopyGen
 producer "png"   = procImage 
 producer "jpg"   = procImage
 producer "eps"   = procGeneric (Just True)
+producer "py"    = procGeneric (Just True)
 producer _       = procGeneric Nothing
 
 {-
@@ -50,6 +51,11 @@ actions file = do
 anyM  cond list = mapM cond list >>= return.or
 anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >>= return.or
 -}
+
+
+deriv `notDerived` files = not $ any (isStrip deriv) files
+  where isStrip deriv file = takeExtension deriv == takeExtension file &&
+                             dropExtensions deriv == dropExtensions file
 
 readConfig = do 
 	exists <- doesFileExist file
@@ -141,6 +147,7 @@ main = do
   let systemFiles = [logfilename]
       putStrExts   = [".log",".output"]
       delete =  filter (\f -> not $ any (takeExtension f ==) putStrExts) $
+		filter (`notDerived` producedFiles) $ 
       		filter (`notElem` producedFiles) $
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $

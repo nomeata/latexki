@@ -199,7 +199,10 @@ logfilename = "latexki-run.log"
 datadir     = "data"
 
 safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
-writeFileSafe file str = createDirectoryIfMissing True (takeDirectory file) >> writeFile file str
+writeFileSafe file str = do
+	createDirectoryIfMissing True (takeDirectory file)
+	B.writeFile file str
+
 safeRemoveFile file = do exists <- doesFileExist file
                          if exists then removeFile file else return ()
 

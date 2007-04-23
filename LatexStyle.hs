@@ -15,7 +15,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 
 writeLatexPage page title body = do
-  liftIO  . (writeFileSafe (pageOutput page ".tex")) =<<  B.unpack `liftM` latexFile page title body
+  liftIO  . (writeFileSafe (pageOutput page ".tex")) =<< latexFile page title body
   liftIO $ do
 	  readNull <- Just `liftM` openFile "/dev/null" ReadMode
 	  writeLog <- Just `liftM` openFile (pageOutput page ".output") WriteMode
@@ -83,7 +83,7 @@ escapes = [	('\\',B.pack "\\textbackslash{}"),
 escape t | B.null t  = t
          | otherwise = case lookup (B.head t) escapes of 
 	 		Just rep -> rep `B.append` escape (B.tail t)
-			Nothing  -> let (done,todo) = B.span (isJust . flip lookup escapes) t in done `B.append` escape todo
+			Nothing  -> let (done,todo) = B.span (isNothing . flip lookup escapes) t in done `B.append` escape todo
 {-
 escape ""    = ""
 escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
