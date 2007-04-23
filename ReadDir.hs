@@ -18,7 +18,7 @@ data DirEntry = DirEntry {
 } deriving (Show)
 
 readDir :: FilePath -> IO [DirEntry]
-readDir dir = mapM mkDirEntry =<< map (makeRelative dir) `liftM` recursive dir
+readDir dir = mapM (mkDirEntry . makeRelative dir) =<< recursive dir
   where	mkDirEntry file = do
   		modTime <- {- unsafeInterleaveIO $ -} getModificationTime (dir </> file)
   		content <-    unsafeInterleaveIO $  (LB.fromChunks . (:[])) `liftM` B.readFile (dir </> file)
@@ -30,11 +30,11 @@ readDir dir = mapM mkDirEntry =<< map (makeRelative dir) `liftM` recursive dir
 		all_entries <- if dir == "" 
 			then getDirectoryContents "."
 			else getDirectoryContents dir
-		let entries = filter (\(h:_) -> h /= '.') all_entries
+		let entries = filter ((/='.') . head) all_entries
 		files  <- filterM (doesFileExist . combine dir) entries
 		dirs   <- filterM (doesDirectoryExist . combine dir) entries
 		deeper <- concat `liftM` mapM (recursive . combine dir) dirs
-		return $ map (combine dir) (files ++ deeper)
+		return $ (map (combine dir) files) ++ deeper
 
 
 

@@ -1,6 +1,6 @@
 module Dependencies (
 	needUpdate, needUpdates, isUpToDate, DepResult(..), showState,
-	anyOlder, isOlder
+	anysOlder, anyOlder, isOlder
 ) where
 
 import Data.Monoid
@@ -11,39 +11,37 @@ import Directory
 import Common
 import WikiData
 
-data DepResult = UpToDate | ResultMissing PageInfo | DepNew [(PageInfo, PageInfo)] | Always String 
+data DepResult =
+	UpToDate |
+--	ResultMissing PageInfo |
+	DepNew [(PageInfo, PageInfo)] |
+	Always String deriving (Show)
 
 isUpToDate UpToDate = True
 isUpToDate _        = False
 
 showState name UpToDate = return ()
-showState name x        = putStrLn $ name ++ " updated because: " -- ++ (show x)
+showState name x        = putStrLn $ name ++ " updated because: "  ++ (show x)
 
 instance Monoid DepResult where
 	mempty = UpToDate
 
-	UpToDate        `mappend` anything        = anything
-	anything        `mappend` UpToDate        = anything
 	Always r1       `mappend` Always r2       = Always (r1 ++ r2)
+	DepNew l1       `mappend` DepNew l2       = DepNew (l1 ++ l2)
 	Always r        `mappend` _               = Always r
 	_               `mappend` Always r        = Always r
-	ResultMissing r `mappend` _               = ResultMissing r
-	_               `mappend` ResultMissing r = ResultMissing r
-	DepNew l1       `mappend` DepNew l2       = DepNew (l1 ++ l2)
+--	ResultMissing r `mappend` _               = ResultMissing r
+--	_               `mappend` ResultMissing r = ResultMissing r
+	UpToDate        `mappend` anything        = anything
+	anything        `mappend` UpToDate        = anything
 
 
-needUpdates targets deps = mconcat `fmap` mapM (flip needUpdate deps) targets
+needUpdates targets deps = concat $ map (`needUpdate` deps) targets
 
-needUpdate target deps = do
-	let targetTime = getInputTime target
-	let needUpdate' dep = do
-		let sourceTime = getInputTime dep
-		return $ if sourceTime < targetTime then
-			UpToDate
-		   else 
-			DepNew [(dep,target)]
-	mconcat `fmap` mapM needUpdate' deps
-		 	
+needUpdate target deps = concat $ flip map deps $ \dep ->
+			if getInputTime dep > getInputTime target then [dep] else []
+
+anysOlder pages targets = or `fmap` mapM (flip anyOlder targets) pages
 
 anyOlder page targets = or `fmap` mapM (isOlder page) targets
 

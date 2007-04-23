@@ -6,7 +6,6 @@ import Common
 import WikiData
 import HtmlStyle
 import LatexStyle
-import Dependencies
 
 import System.FilePath
 import qualified Data.ByteString.Lazy.Char8 as B

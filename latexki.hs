@@ -11,6 +11,8 @@ import System.FilePath
 import Directory
 import Monad
 import List
+import Data.Maybe
+import qualified Data.Set as S
 
 import Dependencies
 import WikiData
@@ -35,8 +37,14 @@ producer "css"   = procCopyGen
 producer "png"   = procImage 
 producer "jpg"   = procImage
 producer "eps"   = procGeneric (Just True)
-producer "py"    = procGeneric (Just True)
 producer _       = procGeneric Nothing
+
+run_deps wi page = deps (pageType page) wi page
+
+deps :: String -> WikiInfo -> PageInfo -> [PageInfo]
+deps "tex" = depsTex 
+deps "part.tex" = depsTex 
+deps _     = \_ _ -> []
 
 {-
 actions file = do 
@@ -52,10 +60,20 @@ anyM  cond list = mapM cond list >>= return.or
 anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >>= return.or
 -}
 
-
+-- Whether a file is a derived file (with additional extension in between, e.g. bla.pdf → bla.1.pdf)
 deriv `notDerived` files = not $ any (isStrip deriv) files
   where isStrip deriv file = takeExtension deriv == takeExtension file &&
                              dropExtensions deriv == dropExtensions file
+			  
+-- Transitive Hull
+transHull :: (Ord a, Eq a) => [(a,S.Set a)]  -> [(a,S.Set a)]
+transHull rel = foldl nextPlease [] rel
+  where nextPlease :: (Ord a, Eq a) => [(a,S.Set a)] -> (a,S.Set a) -> [(a,S.Set a)]
+	nextPlease done x@(c,d) = (c, newdeps) : done'
+	  where newdeps = d `S.union` (S.unions $ S.toList $ S.map (fromMaybe S.empty . flip lookup done) d)
+	        done'   = map (`trans` x) done 
+	(c,d) `trans` (c2,d2) = (c, d `S.union` (if c2 `S.member` d then d2 else S.empty))
+
 
 readConfig = do 
 	exists <- doesFileExist file
@@ -116,14 +134,14 @@ main = do
   putStrLn "Done."
 
   let wi = WikiInfo {
-  	sitemap = map de2sm inputfiles,
+  	sitemap = sort $ map de2sm inputfiles,
   	wikiConfig = config,
 	recentChanges = rc,
 	existingOutput = foundOutputs
 	}
 
   putStr "Find out there is to do.."
-  let outdated = [] -- FIXME
+  let depmap = map (fmap S.toList) $ transHull $ map (\p -> (p,S.fromList (run_deps wi p))) (sitemap wi)
   putStrLn "Done."
   
   putStrLn "Generating files as needed.."
@@ -131,9 +149,9 @@ main = do
   producedFiles <- runFileProducer wi $ flip mapM_ (sitemap wi) $ \page -> do 
 	x <- return True
   	actions <- run_producer page	
-	let force = page `elem` outdated
+	let force = False
   	flip mapM_ actions $ \(outputs, action) -> do
-		old <- or `liftM` mapM (isOlder page) outputs
+		old <- anysOlder (page:fromMaybe [] (lookup page depmap)) outputs
 		flip mapM_ outputs producedFile 
 		when (force || old) $ do
 			liftIO $ putStrLn ("Generating outdated files: " ++ concat (intersperse ", " outputs))

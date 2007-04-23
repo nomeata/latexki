@@ -1,4 +1,4 @@
-module Latex ( procTex ) where
+module Latex ( procTex, depsTex ) where
 
 import Maybe
 import Monad
@@ -14,7 +14,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import WikiData
 import Common
 import HtmlStyle
-import Dependencies
 import PDF
 
 
@@ -74,24 +73,27 @@ findSimpleCommands ('\\':rest1) | null rest5					= [(command, "")]
 findSimpleCommands (_:rest)                       				= findSimpleCommands rest	      
 -}
 
-depCmds = [("input",[".tex",".part.tex"]),("include",[".tex",".part.tex"]),
-		("usepackage",[".sty"]), ("includegraphics",["",".png"] ) ]
-{-
-findDeps tex = do
-	let file = B.unpack $ smContent tex
-	let commands = findSimpleCommands file
+depCmds = [
+	(B.pack "input",["tex","part.tex"]),
+	(B.pack "include",["tex","part.tex"]),
+	(B.pack "usepackage",["sty"]),
+	(B.pack "includegraphics",["","png"] )
+	]
+depsTex wi tex =
+	let file = smContent tex
+	    commands = findSimpleCommands file
 	    candits = catMaybes $  map (\(c,f) -> case lookup c depCmds of 
-	  			        		Just exts -> Just $ (f,exts)
+	  			        		Just exts -> Just $ (B.unpack f,exts)
 							Nothing -> Nothing          ) commands
-	files <- liftM (filter (/=tex).catMaybes) $ mapM find candits
-	additional <- liftM (nub.sort.concat) $ mapM findDeps files
-	return (tex:additional)
- where  find (candit,exts) = liftM listToMaybe $ filterM doesFileExist [ 
-			dir </> candit <.> ext |
-				dir <- dirTrail tex,
-				ext <- exts
-			]
--}	
+	    files = filter (/=tex) $ catMaybes $ map find candits
+	in files
+	-- FIXME this for file in subdirectories!
+        --		dir <- dirTrail (pagename tex),
+ where  find (candit,exts) = do
+ 		page <- lookupPage (PageName candit) (sitemap wi)
+		guard $ smType page `elem` exts ||
+		        ""          `elem` exts      --If any is allowed
+		return page
 
 {-
 texInclCmds = ["input","include"]

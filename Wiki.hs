@@ -16,11 +16,13 @@ import Common
 import HtmlStyle
 import LatexStyle
 import WikiData
-import Dependencies
 
+{-
+import Dependency
 alwaysUpdate text = mappend (if "!!sitemap!!" `subListOf` lc       then Always "Sitemap"       else UpToDate)
                             (if "!!recentchanges!!" `subListOf` lc then Always "RecentChanges" else UpToDate)
   where	lc = map toLower text
+-}
 
 procWiki :: FileProcessor
 procWiki wiki = do

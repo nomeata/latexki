@@ -3,7 +3,6 @@ module Generic ( procGeneric, procCopyGen, procCopy ) where
 import WikiData
 import Common
 import HtmlStyle
-import Dependencies
 
 import Char
 import Maybe
