@@ -54,7 +54,7 @@ module Common (
 	directoryFiles,
 	recursiveFiles,
 
-	replace,
+	replaceBS,
 	subListOf,
 ) where
 
@@ -235,10 +235,11 @@ triple1 (x,_,_) = x
 triple2 (_,x,_) = x
 triple3 (_,_,x) = x
 		
-replace what with l = replace' l
- where 	replace' []   = []
-	replace' text = if what `isPrefixOf` text then with ++ (replace' (drop (length what) text) )
-						  else head text : replace' (tail text)
+
+replaceBS what with txt = fromMaybe txt $ listToMaybe $ catMaybes $ map replaceIfFoundAt $ B.elemIndices (B.head what) txt
+  where replaceIfFoundAt n | what `B.isPrefixOf` B.drop n txt = Just $ B.take n txt `B.append` with `B.append` B.drop (n+ B.length what) txt
+                           | otherwise                      = Nothing
+
 
 subListOf []   _   = True
 subListOf what l = contains' l

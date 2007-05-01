@@ -95,34 +95,42 @@ depsTex wi tex =
 		        ""          `elem` exts      --If any is allowed
 		return page
 
-{-
-texInclCmds = ["input","include"]
+texInclCmds = [B.pack "input", B.pack "include"]
 prepareStripped :: PageInfo -> FileProducer ()
 prepareStripped tex = do
-	let file = B.unpack $ smContent tex
+	let file = smContent tex
 	let commands = findSimpleCommands file
-	    candits = map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
-	files <- liftIO $ liftM catMaybes $ mapM find candits
-	sequence (map snd files)
-	mapM_ (\(f,_) -> prepareStripped f) files
- where  find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
+	    candits = map B.unpack $ map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
+	wi <- getWi
+	let todo = catMaybes $ map (find wi) candits
+	sequence (map snd todo)
+	mapM_ prepareStripped $ map fst todo
+ where  find wi candit = do
+ 		file <- lookupPage (PageName candit) (sitemap wi)
+		method <- lookup (smType file) methods
+		return $ (file,  method file (pageOutput file "tex"))
+{- where  find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
 			(dir </> candit <.> suf, m (dir </> candit <.> suf) (candit <.> ".tex")) |
 				dir <- dirTrail (fileRelative tex),
 				(suf,m) <- methods
-			]
-	methods = [ (".part.tex", copy), (".tex",strip) ]
+			] -}
+	methods = [ ("part.tex", copy), ("tex",strip) ]
 	--copy f t =  putStrLn ("copying   " ++ f ++ " to " ++ t) >> copyFile f t
-	copy f t = liftIO $ copyFile f t
+	copy f t = liftIO $ copyFile (pageInput f) t
 	--strip f t = putStrLn ("stripping " ++ f ++ " to " ++ t) >> ((writeFileSafe t). strip' =<< readFile f)
-	strip f t = liftIO $ writeFileSafe t . strip' =<< readFile f
+	strip f t = liftIO $ writeFileSafe t  stripped
 	 where 
-	 	strip' file = chaptertitle $ mainPart file 
-		 where	title = fromMaybe "No Title" $ lookup "title" $ findSimpleCommands file
-		 	chaptertitle = replace "\\maketitle" ("\\chapter{"++title++"}")
-		mainPart = unlines . takeWhile (not. subListOf "\\end{document}") . stail . dropWhile (not. subListOf "\\begin{document}") . lines
+	 	file = smContent f
+	 	stripped = chaptertitle $ mainPart file 
+		title = fromMaybe (B.pack "No Title") $ lookup (B.pack "title") $ findSimpleCommands file
+		chaptertitle = replaceBS (B.pack "\\maketitle") (B.pack "\\chapter{" `B.append` title `B.append` B.pack "}")
+		mainPart =	B.unlines .
+				takeWhile (not. B.isPrefixOf (B.pack "\\end{document}")) .
+				stail .
+				dropWhile (not. B.isPrefixOf (B.pack "\\begin{document}")) .
+				B.lines
 	        stail [] = []
 	        stail l  = tail l
--}	
 
 
 hasCommand command tex = command  `elem` findSimpleCommands (smContent tex)
@@ -153,7 +161,7 @@ procTex tex = do
 
 genPDF :: PageInfo -> FileProducer (Bool)
 genPDF tex =  do 
-	--prepareStripped tex
+	prepareStripped tex
 	err <- liftIO $ whileOk =<< runLatex
 	case err of
 		ExitFailure _ -> liftIO $ putStrLn (pagename tex ++ ": LaTeX failed ("++show err ++")")

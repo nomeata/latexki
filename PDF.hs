@@ -101,7 +101,7 @@ formatPDFInfo file info = [
 extractPDFPages infile outfile (from, to) = do
 	let range = (show from) ++ "-" ++ (show to)
 	let options = [infile,"cat",range,"output",outfile]
-	liftIO $ print $ unwords ("pdftk":options)
+	-- liftIO $ print $ unwords ("pdftk":options)
 	pid <- runProcess "pdftk" options Nothing Nothing Nothing Nothing Nothing
 	waitForProcess pid
 	return ()
