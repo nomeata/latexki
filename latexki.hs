@@ -46,6 +46,11 @@ deps "tex" = depsTex
 deps "part.tex" = depsTex 
 deps _     = \_ _ -> []
 
+do_always wi page = always (pageType page) wi page
+
+always "" = alwaysWiki
+always _  = (\_ _ -> False)
+
 {-
 actions file = do 
 	let  (basename, ext)  = splitWikiPath file
@@ -142,6 +147,7 @@ main = do
 
   putStr "Find out there is to do.."
   let depmap = map (fmap S.toList) $ transHull $ map (\p -> (p,S.fromList (run_deps wi p))) (sitemap wi)
+  let always = filter (do_always wi) (sitemap wi)
   putStrLn "Done."
   
   putStrLn "Generating files as needed.."
@@ -149,7 +155,7 @@ main = do
   producedFiles <- runFileProducer wi $ flip mapM_ (sitemap wi) $ \page -> do 
 	x <- return True
   	actions <- run_producer page	
-	let force = False
+	let force = page `elem` always
   	flip mapM_ actions $ \(outputs, action) -> do
 		old <- anysOlder (page:fromMaybe [] (lookup page depmap)) outputs
 		flip mapM_ outputs producedFile 

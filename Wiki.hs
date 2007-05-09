@@ -1,6 +1,6 @@
 {-# OPTIONS -fglasgow-exts #-}
 
-module Wiki (procWiki) where
+module Wiki (procWiki, alwaysWiki) where
 
 
 import FilePath
@@ -11,6 +11,8 @@ import Monad
 import Maybe
 import System.FilePath
 import qualified Data.ByteString.Lazy.Char8 as B
+
+import BSUtils
 
 import Common
 import HtmlStyle
@@ -23,6 +25,10 @@ alwaysUpdate text = mappend (if "!!sitemap!!" `subListOf` lc       then Always "
                             (if "!!recentchanges!!" `subListOf` lc then Always "RecentChanges" else UpToDate)
   where	lc = map toLower text
 -}
+
+alwaysWiki wi page = (B.pack "!!sitemap!!")       `subStringCI` (smContent page) ||
+		     (B.pack "!!recentchanges!!") `subStringCI` (smContent page)
+
 
 procWiki :: FileProcessor
 procWiki wiki = do
