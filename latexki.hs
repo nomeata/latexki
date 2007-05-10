@@ -86,7 +86,7 @@ readConfig = do
 		return.(map extract).(filter (not.isComment)).lines =<< readFile file
 	  else
 		return []
-  where file = datadir ++ "latexki-main.wiki-conf"		
+  where file = datadir </> "latexki-main.wiki-conf"		
   	isComment ('#':_) = True
 	isComment l  | all (`elem` whitespace) l = True
 	             | otherwise            = False

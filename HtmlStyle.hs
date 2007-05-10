@@ -17,7 +17,7 @@ writeHtmlPage file page title body = liftIO . (writeFileSafe file) =<< htmlPage 
 
 htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (B.ByteString)
 htmlPage page title body =  do
-	mainTitle <-B.pack `liftM` getMainTitle
+	mainTitle <- B.pack `liftM` getMainTitle
 	wikiConfig <- getWikiConfig
 	sitemap <- getSiteMap
 	let ?currentPage = page
