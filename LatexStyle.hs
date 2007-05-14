@@ -129,8 +129,8 @@ renderLink (WikiLink page txt) = aHref (escape (B.pack (pageOutput page "html"))
              | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
 -}
 
-renderLink (NewLink page)       = aHref (escape (B.pack (namedNewLink page))) (escape (B.pack (page ++ "(new)")))
-renderLink (DLLink file)        = aHref (escape file)                         (escape (file `B.append` B.pack "(download)"))
+renderLink (NewLink page)       = aHref (escape (B.pack (namedNewLink page))) (escape (B.pack (page ++ " (new)")))
+renderLink (DLLink file)        = aHref (escape file)                         (escape (file `B.append` B.pack " (download)"))
 renderLink (PlainLink href txt) = aHref (escape href)                         (escape txt)
 
 linkto a = aHref (escape a) (escape a)

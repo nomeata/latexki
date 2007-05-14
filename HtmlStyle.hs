@@ -120,9 +120,9 @@ renderLink (WikiLink page txt) = aHref (escape (B.pack (pageOutput page "html"))
    -}
 
 renderLink (NewLink page)       = aHrefRel (escape (B.pack (namedNewLink page)))
-					   (escape (B.pack (page ++ "(new)")))
+					   (escape (B.pack (page ++ " (new)")))
 renderLink (DLLink file)        = aHrefRel (escape file)
-					   (escape (file `B.append` B.pack"(download)")) 
+					   (escape (file `B.append` B.pack" (download)")) 
 renderLink (PlainLink href txt) = aHref (escape href)                (escape txt)
 
 
