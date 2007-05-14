@@ -132,11 +132,13 @@ parseSpecial wi l | cmd == B.pack "hello" = Paragraph [Text (B.pack "Hello World
 		  | otherwise               = Paragraph [Text (B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\"")]
   where cmd = B.map toLower $ takeout (B.pack "!!") l
 
-parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg
+parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg websvn
   where msg = parseInline wi raw_msg
   	links = flip map paths $ \path -> case lookupPage (PageName (dropExtensions path)) (sitemap wi) of
 			Just page -> mkPageLink wi page
 			Nothing   -> NewLink (dropExtensions path)
+	websvn = fmap websvnlink (lookup "websvn" (wikiConfig wi))
+	websvnlink url = PlainLink (B.pack (url ++ "?op=comp&compare[]=/@" ++ show (rev-1) ++ "&compare[]=/@" ++ show rev)) (B.pack "WebSVN Changes")
 
 encloses sub str = sub `B.isPrefixOf` str && sub `myIsSuffixOf` str && B.length str > 2 * B.length sub
 --encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub

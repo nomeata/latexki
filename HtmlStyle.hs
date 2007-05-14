@@ -18,11 +18,10 @@ writeHtmlPage file page title body = liftIO . (writeFileSafe file) =<< htmlPage 
 htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (B.ByteString)
 htmlPage page title body =  do
 	mainTitle <- B.pack `liftM` getMainTitle
-	wikiConfig <- getWikiConfig
-	sitemap <- getSiteMap
+	wi <- getWi
 	let ?currentPage = page
 	let exts = pageExts page
-	let addmenuconf   = fromMaybe "" . lookup "addmenu" $ wikiConfig
+	let addmenuconf   = fromMaybe "" . lookup "addmenu" $ wikiConfig wi
 	    addmenu       =  (map (\f -> (B.pack f,B.pack ("./"++f++".html")) ) $ words addmenuconf) ++
 	                     (map (\e -> (B.pack ("View as "++e),B.pack (pageOutput page e)))  exts)
 	return $
@@ -100,7 +99,7 @@ render (RCElem changes)  = tagP (B.pack "ol") [(B.pack "id",B.pack "recentChange
 				map formatChange changes
   where	formatChange entry = tag (B.pack "li") $ tag (B.pack "table") $ B.concat $
                              map (tag (B.pack "tr")) $
-			     map (\(a,b) -> tag (B.pack "th") a `B.append` tag (B.pack "td") b ) [ 
+			     map (\(a,b) -> tag (B.pack "th") a `B.append` tag (B.pack "td") b ) $ [ 
   		(B.pack "Revision:", B.pack $   show         $ revision entry),
   		(B.pack "Author:",              escape       $ author   entry),
   		(B.pack "Date:",                escape       $ date     entry),
@@ -108,7 +107,7 @@ render (RCElem changes)  = tagP (B.pack "ol") [(B.pack "id",B.pack "recentChange
 					map renderInline $ message entry),
   		(B.pack "Changed Files:", tag (B.pack "ul") $ B.concat $
 					map (tag (B.pack "li") . renderLink) $ links  entry)
-		]
+		] ++ (maybeToList $ fmap (\link -> (B.pack "Diff:", renderLink link)) (websvn entry))
 
 renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link

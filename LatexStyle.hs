@@ -110,14 +110,14 @@ render (Header _ text) = B.pack "\\textbf{"         `B.append` escape text `B.ap
 render (RCElem [])     = B.empty
 render (RCElem changes)  = env (B.pack "enumerate") $ B.concat $ map formatChange changes
   where	formatChange entry = (B.pack "\\item " `B.append`) $ env (B.pack "description") $
-                             B.concat $ map (\(a,b) -> B.concat [B.pack "\\item[",a,B.pack "] ", b] ) [ 
+                             B.concat $ map (\(a,b) -> B.concat [B.pack "\\item[",a,B.pack "] ", b] ) $ [ 
   		(B.pack "Revision:",B.pack $             show   $ revision entry),
   		(B.pack "Author:"  ,                     escape $ author   entry),
   		(B.pack "Date:",                         escape $ date     entry),
   		(B.pack "Message:", B.concat $ map renderInline $ message  entry),
   		(B.pack "Changed Files:",(env (B.pack "itemize") $ B.concat $
 					map ((B.pack "\\item " `B.append`) . renderLink) (links entry)))
-		]
+		] ++ (maybeToList $ fmap (\link -> (B.pack "Diff:", renderLink link)) (websvn entry))
 
 renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link

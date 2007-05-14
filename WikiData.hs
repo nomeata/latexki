@@ -37,7 +37,8 @@ data LogEntry = LogEntry {
 	author :: B.ByteString,
 	date :: B.ByteString,
 	links :: [Link],
-	message :: InlineText }  deriving Show
+	message :: InlineText,
+	websvn :: Maybe Link }  deriving Show
 
 data Link =	WikiLink PageInfo B.ByteString |
 		NewLink String |
