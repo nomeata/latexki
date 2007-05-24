@@ -39,7 +39,7 @@ procWiki wiki = do
 	--let up2date = isUpToDate depRes
 	--liftIO $ showState (pagename wiki) depRes
 	wi <- getWi
-	let parsed = parse wi $ map stripWhitespace $ B.lines content
+	let parsed = parse wi $ map stripWhitespace $ B.split '\n' content
 	return [ 
 		([htmlFile], writeHtmlPage htmlFile wiki (pagename wiki) parsed),
 		([pdfFile],  writeLatexPage wiki  (pagename wiki) parsed)
