@@ -41,6 +41,7 @@ getSVNRecentChanges repos = do
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
 	xml <- hGetContents out
+	if xml /= xml then return () else return ()
         forkIO $ waitForProcess pid >> return ()
 	let doc= xmlParse "svn log" xml
 	return $ toLogEntries doc
