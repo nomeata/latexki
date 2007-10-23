@@ -27,7 +27,7 @@ whileOk (x:xs) = do
 
 uncomment t | B.null t                          = B.empty
             | t == B.singleton '\\'             = t
-	    | B.singleton '\\' `B.isPrefixOf` t = B.head (B.tail t) `B.cons` uncomment (B.tail (B.tail t))
+	    | B.singleton '\\' `B.isPrefixOf` t = B.cons (B.head t) $ B.cons (B.head (B.tail t)) $ uncomment (B.tail (B.tail t))
 	    | B.singleton '%'  `B.isPrefixOf` t = B.empty
 	    | True                              = B.head t `B.cons` uncomment (B.tail t)
 {-
@@ -262,6 +262,7 @@ findspans first extract list = findspans' first (map extract list) 1 0
         findspans' current (Just new:xs) a b =  ((a,b), current) : findspans' new     xs (b+1) (b+1)
         findspans' current (Nothing :xs) a b =                     findspans' current xs  a    (b+1)
 
+getIndex :: PageInfo -> B.ByteString -> [DocElement]
 getIndex tex = format . extract . map uncomment . B.lines 
   where	extract = findspans (B.pack "Preamble") extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
