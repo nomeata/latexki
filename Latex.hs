@@ -203,8 +203,9 @@ genPDF tex =  do
 	let pstqueue = if usesPST tex
 			then [
 				runit outDir "/usr/bin/latex" [ realsource ],
-				runit ""     "/usr/bin/dvips" [ pageOutput tex "dvi", "-o", pageOutput tex "pics.ps" ],
-				runit ""     "/usr/bin/ps2pdf" [ pageOutput tex "pics.ps" ]
+				runit ""     "/usr/bin/dvips" [ pageOutput tex "dvi", "-o",
+				                                pageVariant tex "pics.ps" ],
+				runit ""     "/usr/bin/ps2pdf" [ pageVariant tex "pics.ps" ]
 	        	]
 			else []
 	

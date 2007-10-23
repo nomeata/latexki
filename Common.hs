@@ -17,6 +17,7 @@ module Common (
 	de2sm,
 	pagename,
 	pageOutput,
+	pageVariant,
 	pageOutputs,
 	pageInput,
 	pageType,
@@ -172,10 +173,12 @@ getOutputs = concatMap pageOutputs `liftM` getSiteMap
 pageSource page = smContent page
 pageType page = smType page
 pageOutput PageInfo {smPageName = pn, smType = t} ext =      outputFile pn ext 
+pageVariant PageInfo {smPageName = pn, smType = t} ext =     outputVariant pn ext 
 pageOutputs PageInfo {smPageName = pn, smType = t}    = map (outputFile pn) $ generated_by t 
 pageInput PageInfo {smPageName = pn, smType = t}      = datadir </> outputFile pn t
 
-outputFile (PageName base) ext = base <.> ext
+outputFile    (PageName base) ext = base <.> ext
+outputVariant (PageName base) ext = base ++ "-" ++ ext
 
 inDir dir action = do
 	if not (null dir) then  do
