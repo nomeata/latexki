@@ -25,11 +25,18 @@ whileOk (x:xs) = do
 		ExitSuccess -> whileOk xs
 		otherwise   -> return res
 
+uncomment t = case filter (\n -> n==0 || B.index t (n-1) /= '\\') (B.elemIndices '%' t) of
+		[]  -> t
+		n:_ -> B.take n t
+
+{-
 uncomment t | B.null t                          = B.empty
             | t == B.singleton '\\'             = t
 	    | B.singleton '\\' `B.isPrefixOf` t = B.cons (B.head t) $ B.cons (B.head (B.tail t)) $ uncomment (B.tail (B.tail t))
 	    | B.singleton '%'  `B.isPrefixOf` t = B.empty
-	    | True                              = B.head t `B.cons` uncomment (B.tail t)
+	    | otherwise                         = B.head t `B.cons` uncomment (B.tail t)
+-}
+
 {-
 uncomment ""            = ""
 uncomment "\\"          = "\\"
