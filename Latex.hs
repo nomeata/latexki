@@ -175,6 +175,7 @@ genPDF tex =  do
 		ExitSuccess   -> return ()
 	return $ err == ExitSuccess
   where realsource = fileRelative tex
+  	source     = takeFileName (pageOutput tex "tex")
   	--realbasename = dropExtensions realsource
 	output   = pageOutput tex "output"
 	outDir   = takeDirectory (pagename tex)
@@ -200,9 +201,12 @@ genPDF tex =  do
 		safeRemoveFile $ output
 		return ExitSuccess
 
+	let copyInput = do
+		inDir outDir (copyFile realsource source)
+
 	let pstqueue = if usesPST tex
 			then [
-				runit outDir "/usr/bin/latex" [ realsource ],
+				runit outDir "/usr/bin/latex" [ source ],
 				runit ""     "/usr/bin/dvips" [ pageOutput tex "dvi", "-o",
 				                                pageVariant tex "pics.ps" ],
 				runit ""     "/usr/bin/ps2pdf" [ pageVariant tex "pics.ps" ]
@@ -215,7 +219,7 @@ genPDF tex =  do
 			]
 			else []
 	
-	let latexrun = 		runit outDir "/usr/bin/pdflatex" [realsource]
+	let latexrun = 		runit outDir "/usr/bin/pdflatex" [source]
 
 	let pngrun =		runit ""     "/usr/bin/convert" [ "-verbose", pdffile ++ "[0]", pageOutput tex "png" ] 
 	
