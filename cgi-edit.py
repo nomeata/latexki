@@ -85,7 +85,7 @@ def main ():
             
 
         if new and basename:
-            assert basename.isalnum(), "Please use only alphanumerical page names"
+            assert basename.replace("/","").isalnum(), "Please use only alphanumerical page names"
 
         if ext:
             filename = basename+"."+ext
