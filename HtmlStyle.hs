@@ -114,7 +114,7 @@ renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link
 renderInline (Image src alt) = tagP (B.pack "img") [(B.pack "src",escape src),(B.pack "alt",escape alt)] B.empty
 
-renderLink (WikiLink page txt) = aHref (escape (B.pack (pageOutput page "html"))) (escape txt) {- ++ more
+renderLink (WikiLink page txt) = aHrefRel (escape (B.pack (pageOutput page "html"))) (escape txt) {- ++ more
   where with ext          = escape (base ++"."++ ext)
  	more | null exts  = ""
              | otherwise  = " ("++(concat $ intersperse ", " $ map (\e -> aHref (with e) (escape e)) exts)++")"
