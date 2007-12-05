@@ -5,6 +5,7 @@ import Control.Monad
 import Directory
 import System.Process
 import System.IO
+import System.FilePath
 import Control.Concurrent
 import Data.List
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -96,7 +97,7 @@ formatPDFInfo file info = [
 		Text (B.singleton ' '),
 		LinkElem $ PlainLink (B.pack (subfile n)) $ B.pack $ "(Page "++ show page++")"
 		]
-        subfile n = chapterFile file n
+        subfile n = takeFileName $ chapterFile file n
 
 extractPDFPages infile outfile (from, to) = do
 	let range = (show from) ++ "-" ++ (show to)

@@ -185,10 +185,10 @@ genPDF tex =  do
 	
 	let runit dir c a = do
 		--let output = realbasename ++ ".output"
-		appendFile output $ "\nRunning "++c++" "++(concat (intersperse " " a))++
+		appendFileSafe output $ "\nRunning "++c++" "++(concat (intersperse " " a))++
 				    " in an env with "++(show (length env))++" entries:\n"
   		readNull <- openFile "/dev/null" ReadMode
-	  	writeLog <- openFile output AppendMode
+	  	writeLog <- openFileSafe output AppendMode
 		err <- inDir dir $
 			runProcess c a Nothing (Just env) (Just readNull) (Just writeLog) (Just writeLog) >>=
 			waitForProcess
@@ -237,30 +237,31 @@ genHTML tex ok pdfInfo = do
 		Just info -> formatPDFInfo pdfFile info
         content | ok = [
 			 Paragraph [Text $ B.pack "File successfully created:"],
-			 ItemList [[LinkElem (PlainLink (B.pack pdfFile) (B.pack "PDF-File"))],
-			           [LinkElem (PlainLink logFile (B.pack "Latex-Logfile"))],
-			           [LinkElem (PlainLink outFile (B.pack "Latex-Output"))],
-			           [LinkElem (PlainLink texFile (B.pack "Latex-Source"))]]
+			 ItemList [[LinkElem (PlainLink pdfFileLink (B.pack "PDF-File"))],
+			           [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
+			           [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
+			           [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
 			]
                 | otherwise          = [	
 			 Paragraph [Text (B.pack "File not successfully created:")],
 			 ItemList [[Text $ B.pack "PDF-File (?)"],
-			           [LinkElem (PlainLink logFile (B.pack "Latex-Logfile"))],
-			           [LinkElem (PlainLink outFile (B.pack "Latex-Output"))],
-			           [LinkElem (PlainLink texFile (B.pack "Latex-Source"))]]
+			           [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
+			           [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
+			           [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
 			]
         preview | ok = [
 			 Header 2 (B.pack "Preview"),
-			 Paragraph [Image pngFile (B.pack "Preview")]
+			 Paragraph [Image pngFileLink (B.pack "Preview")]
 			]
                 | otherwise          = [
 			]
 	pdfFile = pageOutput tex "pdf"
-	logFile = B.pack $ pageOutput tex "log"
-	outFile = B.pack $ pageOutput tex "output"
-	pngFile = B.pack $ pageOutput tex "png"
+	pdfFileLink = B.pack $ takeFileName $ pageOutput tex "pdf"
+	logFileLink = B.pack $ takeFileName $ pageOutput tex "log"
+	outFileLink = B.pack $ takeFileName $ pageOutput tex "output"
+	pngFileLink = B.pack $ takeFileName $ pageOutput tex "png"
 	target  = pageOutput tex "html"
-	texFile = B.pack $ fileRelative tex
+	texFileLink = B.pack $ fileRelative tex
 
 
 findspans :: header -> (line -> Maybe header) -> [line] -> [((Int, Int), header)]

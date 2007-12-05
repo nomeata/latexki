@@ -50,6 +50,8 @@ module Common (
 	inDir,
 	fileRelative,
 	writeFileSafe,
+	appendFileSafe,
+	openFileSafe,
 	safeRemoveFile,
 
 	directoryFiles,
@@ -64,6 +66,7 @@ import Monad
 import List
 import System.Directory
 import System.Time
+import System.IO
 import Control.Monad.Writer
 import Control.Monad.Reader
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -205,6 +208,12 @@ safeChdir dir = createDirectoryIfMissing True dir >> setCurrentDirectory dir
 writeFileSafe file str = do
 	createDirectoryIfMissing True (takeDirectory file)
 	B.writeFile file str
+appendFileSafe file str = do
+	createDirectoryIfMissing True (takeDirectory file)
+	appendFile file str
+openFileSafe file mode = do
+	createDirectoryIfMissing True (takeDirectory file)
+	openFile file mode
 
 safeRemoveFile file = do exists <- doesFileExist file
                          if exists then removeFile file else return ()
@@ -232,7 +241,7 @@ newLink =  "cgi/edit"
 fileRelative :: PageInfo -> String
 fileRelative page = backDir page </> pageInput page
 
-editLinkLines page from to  = "cgi/edit/" ++ (pagename page) ++ "?lines=" ++ show from ++ "-" ++ show to
+editLinkLines page from to  = backDir page </> "cgi/edit/" ++ (pagename page) ++ "?lines=" ++ show from ++ "-" ++ show to
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x

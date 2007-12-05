@@ -22,8 +22,8 @@ htmlPage page title body =  do
 	let ?currentPage = page
 	let exts = pageExts page
 	let addmenuconf   = fromMaybe "" . lookup "addmenu" $ wikiConfig wi
-	    addmenu       =  (map (\f -> (B.pack f,B.pack ("./"++f++".html")) ) $ words addmenuconf) ++
-	                     (map (\e -> (B.pack ("View as "++e),B.pack (pageOutput page e)))  exts)
+	    addmenu       =  (map (\f -> (B.pack f,B.pack (bd (f++".html"))) ) $ words addmenuconf) ++
+	                     (map (\e -> (B.pack ("View as "++e),B.pack (bd (pageOutput page e))))  exts)
 	return $
 	  B.pack "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" `B.append` (
 	  tag (B.pack "html") ((
@@ -43,10 +43,10 @@ htmlPage page title body =  do
 			tagP (B.pack "div") 
 			     [(B.pack "class",B.pack "menu")] $
 			     tag  (B.pack "ul") $ B.concat $
-				map li (      [	(B.pack "Start page",B.pack  "./") ] ++
+				map li (      [	(B.pack "Start page",B.pack (bd "")) ] ++
 						addmenu                ++
-					      [ (B.pack "Edit this", B.pack (editLink page)),
-						(B.pack "Create new page", B.pack (newLink))])
+					      [ (B.pack "Edit this", B.pack (bd (editLink page))),
+						(B.pack "Create new page", B.pack (bd (newLink)))])
 			))
 		) `B.append` (
 			tagP (B.pack "div") [((B.pack "class"),(B.pack "content"))] $
@@ -55,7 +55,8 @@ htmlPage page title body =  do
 	  )
 
   where	li (t,l) = tag (B.pack "li") $ aHref l $ t
-      	stylefile = backDir page </> "latexki-style.css"
+      	stylefile = bd "latexki-style.css"
+	bd = (backDir page </>)
 
 tagP name params body | B.null body = B.singleton '<' `B.append` name `B.append` par `B.append` B.pack "/>"
                       | otherwise   = B.singleton '<' `B.append` name `B.append` par `B.append`

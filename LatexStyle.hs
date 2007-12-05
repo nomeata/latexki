@@ -18,7 +18,7 @@ writeLatexPage page title body = do
   liftIO  . (writeFileSafe (pageOutput page ".tex")) =<< latexFile page title body
   liftIO $ do
 	  readNull <- Just `liftM` openFile "/dev/null" ReadMode
-	  writeLog <- Just `liftM` openFile (pageOutput page ".output") WriteMode
+	  writeLog <- Just `liftM` openFileSafe (pageOutput page ".output") WriteMode
 	  err <- inTargetDir page $ do
 	  	putStrLn $ "Running pdflatex "++takeBaseName (fileRelative page) <.> "tex"
 	  	runProcess "pdflatex" [takeBaseName (fileRelative page) <.> "tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
