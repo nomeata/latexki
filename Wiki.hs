@@ -110,7 +110,7 @@ parseInline wi t | B.null t              = []
 	isBrokenLink	  = B.singleton '[' `B.isPrefixOf` t && not isBracketLink
 	isBracketLink     = B.singleton '[' `B.isPrefixOf`t  && not (B.null lrest) && isValidPagename link 
 	isWebLink         = (B.pack "http://") `B.isPrefixOf` t
-	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_.-~?=" -- more to add?
+	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_.-~?=#" -- more to add?
 
 
 isCamelCase t = not (B.null t) && isUpper w && myAny isUpper ord && myAny isLower ord && myAll isAlphaNum t && myAll isAscii t
