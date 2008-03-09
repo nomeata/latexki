@@ -161,7 +161,7 @@ def main ():
 
     finally:
         os.chdir("/")
-        #shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir)
 
 def prepare_svn():
     global client
