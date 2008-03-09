@@ -48,6 +48,8 @@ def main ():
     try:
         basename = os.environ.get('PATH_INFO','/')[1:]
         repos    = os.environ.get('HTTP_LATEXKI_REPOS',None)
+        if repos[-1] != '/':
+            repos = repos + '/'
         self_uri = os.environ.get('SCRIPT_NAME') + os.environ.get('PATH_INFO','')
         who = os.environ.get('REMOTE_ADDR','unknown').decode('utf8')
         assert repos, "Need HTTP_LATEXKI_REPOS environment variable"
@@ -159,14 +161,14 @@ def main ():
 
     finally:
         os.chdir("/")
-        shutil.rmtree(tmpdir)
+        #shutil.rmtree(tmpdir)
 
 def prepare_svn():
     global client
     client = pysvn.Client()
     client.set_default_username((who + u' via wiki').encode('utf8'))
     zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
-    client.checkout(repos, '.',False,zero)
+    client.checkout(repos, '.',True,zero)
 
 def update(req_rev=None):
     if req_rev:
@@ -174,7 +176,9 @@ def update(req_rev=None):
     else:
         rev = pysvn.Revision( pysvn.opt_revision_kind.head )
     
-    rev_list = client.update(filename,False,rev)
+    # Slow, but needed because of subdirectories
+    rev_list = client.update(".",True,rev)
+    #rev_list = client.update(filename,True,rev)
     assert len(rev_list) == 1
     return rev_list[0].number
 
@@ -201,17 +205,18 @@ def commit(log = u'No log message'):
             return ("Commit failed :-(" , None)
 
 def exists(basename):
-    files =  client.ls(repos)
-    sr = (lambda str: os.path.basename(str))
-    matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
+    (path,filename) = os.path.split(basename)
+    filesobjs = client.ls(repos+path)
+    filenames = map (lambda e: e['name'][len(repos):], filesobjs)
+    matches = filter(lambda f: f == basename or f.startswith(basename+"."),filenames)
     if len(matches) == 0:
         return (True, None)
     else:
         assert len(matches) == 1, "More than one file with this basename, fix the repository!"
-        if sr(matches[0]['name']) == basename:
+        if matches[0] == basename:
             return (False,None)
         else:
-            ext = sr(matches[0]['name'])[len(basename)+1:]
+            ext = matches[0][len(basename)+1:]
             return (False, ext)
 
 def print_headers():
