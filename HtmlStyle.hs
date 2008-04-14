@@ -43,7 +43,7 @@ htmlPage page title body =  do
 			tagP (B.pack "div") 
 			     [(B.pack "class",B.pack "menu")] $
 			     tag  (B.pack "ul") $ B.concat $
-				map li (      [	(B.pack "Start page",B.pack (bd "")) ] ++
+				map li (      [	(B.pack "Start page",B.pack (bd ".")) ] ++
 						addmenu                ++
 					      [ (B.pack "Edit this", B.pack (bd (editLink page))),
 						(B.pack "Create new page", B.pack (bd (newLink)))])
