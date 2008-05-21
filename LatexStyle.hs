@@ -69,21 +69,28 @@ latexFile page title  body = return $ B.concat [
 	      stylefile = backDir basename ++ "latexki-style.css"
 -}
 
-escapes = [	('\\',B.pack "\\textbackslash{}"),
+file_escapes = [
+		('\\',B.pack "\\textbackslash{}"),
+		('{',B.pack "\\{{}"),
+		('}',B.pack "\\}{}")
+	]
+escapes = file_escapes ++ [	
 		('&',B.pack "\\&{}"),
 		('%',B.pack "\\%{}"),
 		('#',B.pack "\\#{}"),
 		('$',B.pack "\\${}"),
 		('^',B.pack "\\textasciicircum{}"),
 		('_',B.pack "\\_{}"),
-		('~',B.pack "\\textasciitilde{}"),
-		('{',B.pack "\\{{}"),
-		('}',B.pack "\\}{}")
+		('~',B.pack "\\textasciitilde{}")
 	]
-escape t | B.null t  = t
-         | otherwise = case lookup (B.head t) escapes of 
+escape' l t | B.null t  = t
+            | otherwise = case lookup (B.head t) l of 
 	 		Just rep -> rep `B.append` escape (B.tail t)
-			Nothing  -> let (done,todo) = B.span (isNothing . flip lookup escapes) t in done `B.append` escape todo
+			Nothing  -> let (done,todo) = B.span (isNothing . flip lookup l) t in done `B.append` escape todo
+
+escape = escape' escapes
+file_escape = escape' file_escapes
+
 {-
 escape ""    = ""
 escape (c:r) = (fromMaybe [c] $ lookup c escapes)  ++ escape r
@@ -121,7 +128,7 @@ render (RCElem changes)  = env (B.pack "enumerate") $ B.concat $ map formatChang
 
 renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link
-renderInline (Image src alt) = B.pack "\\includegraphics[width=\\linewidth]{" `B.append` escape src `B.append` B.pack "}"
+renderInline (Image src alt) = B.pack "\\includegraphics[width=\\linewidth]{" `B.append` file_escape src `B.append` B.pack "}"
 
 renderLink (WikiLink page txt) = aHref (escape (B.pack (pageOutput page "html"))) (escape txt) {-++ more
   where with ext          = escape (base ++"."++ ext)
