@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 module PDF (splitPDF, formatPDFInfo, getPDFInfo,  PDFData(..), PDFIndex(..)) where
 
 import Data.Maybe
@@ -9,6 +10,10 @@ import System.FilePath
 import Control.Concurrent
 import Data.List
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Char
+import qualified Data.String.UTF8 as UTF8
+import Data.Word (Word8)
+import Debug.Trace
 
 import WikiData
 import ReadDir
@@ -19,11 +24,19 @@ data PDFData = PDFData { numberOfPages :: Int, pdfIndex :: [PDFIndex] } deriving
 
 data Fields = NumberOfPages Int | Title String | Level Int | Page Int deriving (Show)
 
-parseField "NumberOfPages" val = Just (NumberOfPages (read val))
+parseField "NumberOfPages"      val = Just (NumberOfPages (read val))
 parseField "BookmarkPageNumber" val = Just (Page (read val))
-parseField "BookmarkTitle" val = Just (Title val)
-parseField "BookmarkLevel" val = Just (Level (read val))
+parseField "BookmarkTitle"      val = Just (Title (unescape val))
+  where unescape ('&':'#':s) | (codepoint,';':r) <- span isNumber s
+                             = encode [chr (read codepoint)]
+                               ++ unescape r
+        unescape (c:cs)      = c:unescape cs
+	unescape []          = []
+	encode :: [Char] -> String
+	encode = map (chr . fromIntegral :: Word8 -> Char). UTF8.toRep . UTF8.fromString
+parseField "BookmarkLevel"      val = Just (Level (read val))
 parseField _		   _   = Nothing
+
 
 isIndexField (Title _) = True
 isIndexField (Level _) = True
