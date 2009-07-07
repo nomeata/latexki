@@ -48,8 +48,6 @@ def main ():
     try:
         basename = os.environ.get('PATH_INFO','/')[1:]
         repos    = os.environ.get('HTTP_LATEXKI_REPOS',None)
-        if repos[-1] != '/':
-            repos = repos + '/'
         self_uri = os.environ.get('SCRIPT_NAME') + os.environ.get('PATH_INFO','')
         who = os.environ.get('REMOTE_ADDR','unknown').decode('utf8')
         assert repos, "Need HTTP_LATEXKI_REPOS environment variable"
@@ -69,7 +67,7 @@ def main ():
         conf_rev = None
         done = False
         log = ''
-        human = 'No'
+        theanswer = '23'
 
         if 'basename' in form:
             basename = form['basename']
@@ -104,11 +102,11 @@ def main ():
 
         if 'content' in form:
             assert 'comment' in form, "Commit comment is compulsory"
-            assert 'human' in form, "Human answer is compulsory"
+            assert 'theanswer' in form, "Calculation answer is compulsory"
             log = form['comment']
-            human = form['human']
-            if human[0] not in "jJyY":
-                error = "Sorry, but you claim you are not human"
+            theanswer = form['theanswer']
+            if theanswer != "42":
+                error = "Please enter 42 in the anti-spam-box, not %s." % theanswer
             else:
                 new_content = form['content'].replace('\r\n','\n') # is this an HACK?
                 if len(new_content) > 0 and new_content[-1] != '\n':
@@ -157,7 +155,7 @@ def main ():
         if done:
             print_success(new, basename, ext, new_rev)
         else:
-            print_page(new, basename, ext, content, log, human, old_rev, conf_rev, error, line_from, line_to)
+            print_page(new, basename, ext, content, log, theanswer, old_rev, conf_rev, error, line_from, line_to)
 
     finally:
         os.chdir("/")
@@ -168,7 +166,7 @@ def prepare_svn():
     client = pysvn.Client()
     client.set_default_username((who + u' via wiki').encode('utf8'))
     zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
-    client.checkout(repos, '.',True,zero)
+    client.checkout(repos, '.',False,zero)
 
 def update(req_rev=None):
     if req_rev:
@@ -176,9 +174,7 @@ def update(req_rev=None):
     else:
         rev = pysvn.Revision( pysvn.opt_revision_kind.head )
     
-    # Slow, but needed because of subdirectories
-    rev_list = client.update(".",True,rev)
-    #rev_list = client.update(filename,True,rev)
+    rev_list = client.update(filename,False,rev)
     assert len(rev_list) == 1
     return rev_list[0].number
 
@@ -205,25 +201,24 @@ def commit(log = u'No log message'):
             return ("Commit failed :-(" , None)
 
 def exists(basename):
-    (path,filename) = os.path.split(basename)
-    filesobjs = client.ls(repos+path)
-    filenames = map (lambda e: e['name'][len(repos):], filesobjs)
-    matches = filter(lambda f: f == basename or f.startswith(basename+"."),filenames)
+    files =  client.ls(repos)
+    sr = (lambda str: os.path.basename(str))
+    matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
     if len(matches) == 0:
         return (True, None)
     else:
         assert len(matches) == 1, "More than one file with this basename, fix the repository!"
-        if matches[0] == basename:
+        if sr(matches[0]['name']) == basename:
             return (False,None)
         else:
-            ext = matches[0][len(basename)+1:]
+            ext = sr(matches[0]['name'])[len(basename)+1:]
             return (False, ext)
 
 def print_headers():
     print "Content-type: text/html"
     print
 
-def print_page(new, basename, ext, content, log, human, rev, conf_rev, error, line_from, line_to):
+def print_page(new, basename, ext, content, log, theanswer, rev, conf_rev, error, line_from, line_to):
     if new:
         if basename:
             title = u"Creating new page “%s”" % basename
@@ -272,9 +267,9 @@ def print_page(new, basename, ext, content, log, human, rev, conf_rev, error, li
     <h3>Commit log entry</h3>
     Please describe your changes. This is mandatory.<br/>
     <input type="text" name="comment" size="80" value="%(comment)s"/>
-    <h3>Are you human?</h3>
+    <h3>What is 40 + 2?</h3>
     Sorry for the inconvenience. This is mandatory, to prevent spam.<br/>
-    <input type="text" name="human" size="80" value="%(human)s"/>
+    <input type="text" name="theanswer" size="80" value="%(theanswer)s"/>
     <h3>Commit changes</h3>
     <input type="hidden" name="_charset_"/>
     %(conftext)s
@@ -282,7 +277,7 @@ def print_page(new, basename, ext, content, log, human, rev, conf_rev, error, li
     <button type="submit">Commit changes
     </button> (can take a while, please be patient)
     </form>''' % { 'pageform':pageform, 'content': esc(content), 'self_uri':esc(self_uri),
-                   'conftext':conftext, 'rev':rev, 'comment':esc(log), 'human':esc(human),
+                   'conftext':conftext, 'rev':rev, 'comment':esc(log), 'theanswer':esc(theanswer),
                    'linetext':linetext }
     print (u'''
 <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
