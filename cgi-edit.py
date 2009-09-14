@@ -105,7 +105,9 @@ def main ():
             assert 'theanswer' in form, "Calculation answer is compulsory"
             log = form['comment']
             theanswer = form['theanswer']
-            if theanswer != "42":
+            if "http" in log:
+                error = "No URLs in the comments, please (Anti-Spam-Measure)"
+            elif theanswer != "42":
                 error = "Please enter 42 in the anti-spam-box, not %s." % theanswer
             else:
                 new_content = form['content'].replace('\r\n','\n') # is this an HACK?
