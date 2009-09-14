@@ -68,6 +68,7 @@ def main ():
         done = False
         log = ''
         theanswer = '23'
+        content = ''
 
         if 'basename' in form:
             basename = form['basename']
@@ -85,7 +86,12 @@ def main ():
             
 
         if new and basename:
-            assert basename.isalnum(), "Please use only alphanumerical page names"
+            dirs = basename.split("/")
+            for i in range(0,len(dirs)):
+                assert dirs[i].isalnum(), "Please use only alphanumerical page names"
+            for i in range(1,len(dirs)):
+                subpath = "/".join(dirs[0:i])
+                assert not(exists(subpath)[0]), "Directory %s does not exist" % subpath
 
         if ext:
             filename = basename+"."+ext
@@ -94,7 +100,11 @@ def main ():
 
 
 
-        if not new:
+        if new:
+            dirname  = os.path.dirname(basename)
+            if dirname:
+                get_directory(dirname)
+        else:
             if 'revision' in form:
                 old_rev = update(form['revision'])
             else:
@@ -105,21 +115,21 @@ def main ():
             assert 'theanswer' in form, "Calculation answer is compulsory"
             log = form['comment']
             theanswer = form['theanswer']
+            content = form['content'].replace('\r\n','\n') # is this an HACK?
             if "http" in log:
                 error = "No URLs in the comments, please (Anti-Spam-Measure)"
             elif theanswer != "42":
                 error = "Please enter 42 in the anti-spam-box, not %s." % theanswer
             else:
-                new_content = form['content'].replace('\r\n','\n') # is this an HACK?
-                if len(new_content) > 0 and new_content[-1] != '\n':
-                    new_content += '\n'
+                if len(content) > 0 and content[-1] != '\n':
+                    content += '\n'
                 if line_from and line_to:
                     old_content  = file(filename,'r').read().decode('utf8')
                     pre_content  = ''.join(old_content.splitlines(True)[:line_from-1])
                     post_content = ''.join(old_content.splitlines(True)[line_to:])
-                    new_content = pre_content + new_content + post_content
+                    content = pre_content + content + post_content
                 
-                file(filename,'w').write(new_content.encode('utf8'))
+                file(filename,'w').write(content.encode('utf8'))
                 if new:
                     add()
                     (error,new_rev) = commit(log)
@@ -130,7 +140,7 @@ def main ():
                         if 'checked_conflict' in form:
                             new_rev = update(form['conf_rev'])
                             assert conflict(), "This should be a conflict, strange..."
-                            file(filename,'w').write(new_content.encode('utf8'))
+                            file(filename,'w').write(content.encode('utf8'))
                             resolve()
                         else:
                             error = "Please do resolve your conflict"
@@ -146,12 +156,13 @@ def main ():
         if conf_rev:
             line_from = line_to = None # Conflicts and line handling bite
 
-        if filename and not new:
-            content = file(filename,'r').read().decode('utf8')
-            if line_from and line_to:
-                content = ''.join(content.splitlines(True)[line_from-1 : line_to])
-        else:
-            content = 'Enter new page here. For LaTeX-Pages, please enter a LaTeX-Document'
+        if not content:
+            if filename and not new:
+                content = file(filename,'r').read().decode('utf8')
+                if line_from and line_to:
+                    content = ''.join(content.splitlines(True)[line_from-1 : line_to])
+            else:
+                content = 'Enter new page here. For LaTeX-Pages, please enter a LaTeX-Document'
 
         print_headers()
         if done:
@@ -169,6 +180,10 @@ def prepare_svn():
     client.set_default_username((who + u' via wiki').encode('utf8'))
     zero = pysvn.Revision( pysvn.opt_revision_kind.number, 0 )
     client.checkout(repos, '.',False,zero)
+
+def get_directory(dirname):
+    global client
+    client.checkout(repos, dirname, False)
 
 def update(req_rev=None):
     if req_rev:
