@@ -99,12 +99,11 @@ def main ():
             filename = basename
 
 
+        dirname  = os.path.dirname(basename)
+        if dirname:
+            get_directory(dirname)
 
-        if new:
-            dirname  = os.path.dirname(basename)
-            if dirname:
-                get_directory(dirname)
-        else:
+        if not new:
             if 'revision' in form:
                 old_rev = update(form['revision'])
             else:
@@ -183,7 +182,7 @@ def prepare_svn():
 
 def get_directory(dirname):
     global client
-    client.checkout(repos, dirname, False)
+    client.update(dirname, False)
 
 def update(req_rev=None):
     if req_rev:
@@ -218,14 +217,17 @@ def commit(log = u'No log message'):
             return ("Commit failed :-(" , None)
 
 def exists(basename):
-    files =  client.ls(repos)
+    dirname = os.path.dirname(basename)
+    basebasename = os.path.basename(basename)
+    files =  client.ls(repos + "/" + dirname)
     sr = (lambda str: os.path.basename(str))
-    matches = filter((lambda e: sr(e['name']) == basename or sr(e['name']).startswith(basename+".")),files)
+    matches = filter((lambda e: sr(e['name']) == basebasename or
+                                sr(e['name']).startswith(basebasename+".")),files)
     if len(matches) == 0:
         return (True, None)
     else:
         assert len(matches) == 1, "More than one file with this basename, fix the repository!"
-        if sr(matches[0]['name']) == basename:
+        if sr(matches[0]['name']) == basebasename:
             return (False,None)
         else:
             ext = sr(matches[0]['name'])[len(basename)+1:]
