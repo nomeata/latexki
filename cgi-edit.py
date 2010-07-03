@@ -230,7 +230,7 @@ def exists(basename):
         if sr(matches[0]['name']) == basebasename:
             return (False,None)
         else:
-            ext = sr(matches[0]['name'])[len(basename)+1:]
+            ext = sr(matches[0]['name'])[len(basebasename)+1:]
             return (False, ext)
 
 def print_headers():
