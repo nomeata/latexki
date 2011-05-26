@@ -119,7 +119,7 @@ def main ():
                 error = "No URLs in the comments, please (Anti-Spam-Measure)"
             elif theanswer != "42":
                 error = "Please enter 42 in the anti-spam-box, not %s." % theanswer
-            elif log = "USA":
+            elif log == "USA":
                 error = "This is a spammers comments, ignored"
             else:
                 if len(content) > 0 and content[-1] != '\n':
