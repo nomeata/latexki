@@ -3,7 +3,7 @@ module LatexStyle (writeLatexPage) where
 import WikiData
 import Common
 
-import System.Process
+import System.Process hiding (env)
 import System.IO
 import System.Directory
 import System
