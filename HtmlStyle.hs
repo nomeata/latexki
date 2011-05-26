@@ -32,7 +32,7 @@ htmlPage page title body =  do
 				[(B.pack "http-equiv",B.pack "Content-Type"),
 				 (B.pack "content",B.pack "text/html; charset=UTF-8")] B.empty,
 			tag (B.pack "title") $
-				mainTitle `B.append` B.pack " - " `B.append` B.pack title `B.append` B.pack "</title>",
+				mainTitle `B.append` B.pack " - " `B.append` B.pack title,
 			tagP (B.pack "link") 
 				[(B.pack "rel",B.pack "stylesheet"),
 				 (B.pack "type",B.pack "text/css"),
