@@ -13,7 +13,7 @@ import Char
 import qualified Data.ByteString.Lazy.Char8 as B
 
 
-writeHtmlPage file page mbFlattr title body =
+writeHtmlPage file page title body =
     liftIO . (writeFileSafe file) =<< htmlPage page title body 
 
 htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (B.ByteString)
