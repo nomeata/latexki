@@ -19,7 +19,7 @@ writeHtmlPage file page mbFlattr title body =
 htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (B.ByteString)
 htmlPage page title body =  do
 	mainTitle <- B.pack `liftM` getMainTitle
-        mbFlattr <- B.pack `liftM` getFlattrURL
+        mbFlattr <- getFlattrURL
 	wi <- getWi
 	let ?currentPage = page
 	let exts = pageExts page
@@ -42,7 +42,7 @@ htmlPage page title body =  do
 		])
 	  ) `B.append` (
 		tag (B.pack "body") ((
-			tagP (B.pack "div") [(B.pack "class", B.pack "menu")] $ B.concat 
+			tagP (B.pack "div") [(B.pack "class", B.pack "menu")] $ B.concat $
 			        [ ulist  $ (B.pack "Start page",B.pack (bd ".")) : addmenu 
 				, ulist	 viewMenu
 				, ulist	 [ (B.pack "Edit this", B.pack (bd (editLink page)))
@@ -50,7 +50,7 @@ htmlPage page title body =  do
 					 ]
 				] ++ ( case mbFlattr of
                                     Nothing -> []
-                                    Just url -> [ulist [ (B.pack "Flattr this!", B.pack url ) ]]
+                                    Just url -> [ulist [(B.pack "Flattr this!", B.pack url)]]
                                 )
 			
 		) `B.append` (
