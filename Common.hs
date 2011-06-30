@@ -27,6 +27,7 @@ module Common (
 	getSiteMap,
 	getWikiConfig,
 	getMainTitle,
+        getFlattrURL,
 	getOutputs,
 	getRecentChanges,
 	getExistingOutput,
