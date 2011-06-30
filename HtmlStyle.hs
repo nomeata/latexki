@@ -13,11 +13,13 @@ import Char
 import qualified Data.ByteString.Lazy.Char8 as B
 
 
-writeHtmlPage file page title body = liftIO . (writeFileSafe file) =<< htmlPage page title body 
+writeHtmlPage file page mbFlattr title body =
+    liftIO . (writeFileSafe file) =<< htmlPage page title body 
 
-htmlPage :: PageInfo -> Maybe String -> String -> [DocElement] -> FileProducer (B.ByteString)
-htmlPage page mbFlattr title body =  do
+htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (B.ByteString)
+htmlPage page title body =  do
 	mainTitle <- B.pack `liftM` getMainTitle
+        mbFlattr <- B.pack `liftM` getFlattrURL
 	wi <- getWi
 	let ?currentPage = page
 	let exts = pageExts page
