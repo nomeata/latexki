@@ -170,6 +170,7 @@ getRecentChanges = recentChanges `liftM` getWi
 getExistingOutput = existingOutput `liftM` getWi
 
 getMainTitle = getWikiConfig >>= return . fromMaybe "A Wiki" . lookup "title"
+getFlattrURL = lookup "flattr" `fmap` getWikiConfig
 
 getOutputs = concatMap pageOutputs `liftM` getSiteMap 
 

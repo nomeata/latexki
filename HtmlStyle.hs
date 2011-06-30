@@ -15,8 +15,8 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 writeHtmlPage file page title body = liftIO . (writeFileSafe file) =<< htmlPage page title body 
 
-htmlPage :: PageInfo -> String -> [DocElement] -> FileProducer (B.ByteString)
-htmlPage page title body =  do
+htmlPage :: PageInfo -> Maybe String -> String -> [DocElement] -> FileProducer (B.ByteString)
+htmlPage page mbFlattr title body =  do
 	mainTitle <- B.pack `liftM` getMainTitle
 	wi <- getWi
 	let ?currentPage = page
@@ -46,7 +46,10 @@ htmlPage page title body =  do
 				, ulist	 [ (B.pack "Edit this", B.pack (bd (editLink page)))
 				         , (B.pack "Create new page", B.pack (bd (newLink)))
 					 ]
-				]
+				] ++ ( case mbFlattr of
+                                    Nothing -> []
+                                    Just url -> [ulist [ (B.pack "Flattr this!", B.pack url ) ]]
+                                )
 			
 		) `B.append` (
 			tagP (B.pack "div") [((B.pack "class"),(B.pack "content"))] $
