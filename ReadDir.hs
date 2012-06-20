@@ -47,5 +47,7 @@ makeRelative cur x = joinPath $
         common = length $ takeWhile id $ zipWith (==) orgdir curdir
         orgpth = splitPath pth
         orgdir = splitDirectories pth
-        curdir = splitDirectories $ normalise $ cur
+        curdir = case splitDirectories $ normalise $ cur of 
+                    (".":rest ) -> rest
+                    dir -> dir
 	pth =  normalise x
