@@ -1,6 +1,5 @@
 module ImageFile ( procImage ) where
 
-import Monad
 
 import Common
 import WikiData

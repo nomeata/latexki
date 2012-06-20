@@ -1,7 +1,7 @@
 module BSUtils (subStringCI) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-import Char
+import Data.Char
 import Control.Monad
 import Prelude 
 

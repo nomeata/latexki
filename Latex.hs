@@ -1,14 +1,14 @@
 module Latex ( procTex, depsTex ) where
 
-import Maybe
-import Monad
+import Data.Maybe
 import System.Directory
 import System.Process
 import System.IO
 import System.FilePath
-import System
-import Char
-import List
+import System.Exit
+import Control.Monad
+import Data.Char
+import Data.List
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import WikiData

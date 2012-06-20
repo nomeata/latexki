@@ -3,7 +3,7 @@ module PDF (splitPDF, formatPDFInfo, getPDFInfo,  PDFData(..), PDFIndex(..)) whe
 
 import Data.Maybe
 import Control.Monad
-import Directory
+import System.Directory
 import System.Process
 import System.IO
 import System.FilePath

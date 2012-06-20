@@ -4,12 +4,12 @@ import WikiData
 import Common
 import HtmlStyle
 
-import Char
-import Maybe
-import Monad
+import Data.Char
+import Data.Maybe
 import System.Directory
 import System.FilePath
 import qualified Data.ByteString.Lazy.Char8 as B
+import Control.Monad
 
 
 procGeneric isBinary page = do 

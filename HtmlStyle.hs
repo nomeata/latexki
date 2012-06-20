@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -fimplicit-params #-}
+{-# LANGUAGE ImplicitParams #-}
+
 module HtmlStyle (htmlPage, writeHtmlPage, tagP, tag, tagL, tagLP, aHref, escape) where
 
 
@@ -7,9 +8,9 @@ import WikiData
 import System.FilePath
 import Control.Monad
 
-import Maybe
-import List
-import Char
+import Data.Maybe
+import Data.List
+import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as B
 
 

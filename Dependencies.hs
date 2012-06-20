@@ -3,13 +3,13 @@ module Dependencies (
 	anysOlder, anyOlder, isOlder
 ) where
 
-import Data.Monoid
-import System
-import System.IO
-import System.Posix.IO
-import Directory
 import Common
 import WikiData
+
+import Data.Monoid
+import System.IO
+import System.Posix.IO
+import System.Directory
 
 data DepResult =
 	UpToDate |

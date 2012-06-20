@@ -1,14 +1,12 @@
-{-# OPTIONS -fglasgow-exts #-}
-
+{-# LANGUAGE Rank2Types #-}
 module Wiki (procWiki, alwaysWiki) where
 
 
-import FilePath
-import List
-import Char
+import System.FilePath
+import Data.List
+import Data.Char
 import Data.Monoid
-import Monad
-import Maybe
+import Data.Maybe
 import System.FilePath
 import qualified Data.ByteString.Lazy.Char8 as B
 

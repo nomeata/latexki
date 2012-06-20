@@ -4,13 +4,13 @@
 
 -}
 
-import System
 import System.IO
 import System.Posix.IO
 import System.FilePath
-import Directory
-import Monad
-import List
+import System.Directory
+import System.Environment
+import Control.Monad
+import Data.List
 import Data.Maybe
 import qualified Data.Set as S
 

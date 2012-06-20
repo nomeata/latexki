@@ -62,9 +62,9 @@ module Common (
 	subListOf,
 ) where
 
-import Maybe
-import Monad
-import List
+import Data.Maybe
+import Control.Monad
+import Data.List
 import System.Directory
 import System.Time
 import System.IO

@@ -6,11 +6,11 @@ import Common
 import System.Process (runProcess, waitForProcess)
 import System.IO
 import System.Directory
-import System
 import System.FilePath
-import Maybe
+import System.Exit
+import Data.Maybe
 import Control.Monad
-import List
+import Data.List
 import qualified Data.ByteString.Lazy.Char8 as B
 
 
