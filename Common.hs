@@ -148,6 +148,7 @@ getWi = ask
 
 pagename PageInfo {smPageName = PageName pn} = pn
 
+de2sm :: DirEntry -> PageInfo
 de2sm de = PageInfo {
 		smPageName = PageName (dropExtensions (deFileName de)),
 		smType     = dropWhile (=='.') $ takeExtensions (deFileName de),
