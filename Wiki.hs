@@ -10,6 +10,7 @@ import Data.Maybe
 import Data.Functor
 import Control.Applicative
 import System.FilePath
+import System.Directory
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import BSUtils
@@ -147,7 +148,13 @@ parseSpecial wi l | cmd == B.pack "hello"
 
 genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of 
     Just page -> do
-        return $ LIElem $ LectureInfo page Nothing
+        let metaDataFile = pageOutput page "metadata"
+        ex <- liftIO $ doesFileExist metaDataFile
+        mbMd <- if ex then do
+                metaDataText <- liftIO $ readFile metaDataFile
+                return $ Just (read metaDataText)
+            else return Nothing
+        return $ LIElem $ LectureInfo page mbMd
     Nothing   -> return $ Paragraph [Text (B.pack "Lecture file \"" `B.append` file `B.append` B.pack "\" not found.")]
 
 
