@@ -137,16 +137,28 @@ renderLi (LectureInfo page Nothing) = tagP (B.pack "div") [(B.pack "class", B.pa
     B.pack "No meta data known about "
     , aHrefRel (escape (B.pack (pageOutput page "html"))) (escape (B.pack (show (smPageName page))))
     ]
-renderLi (LectureInfo page (Just (MetaData {..}))) = tagP (B.pack "div") [(B.pack "class", B.pack "lecture")] $ B.concat [
-    classedSpan "lectureName" $ B.pack "Lecture: " `B.append` escape mdTitle
+renderLi (LectureInfo page (Just (MetaData {..}))) = tagP (B.pack "div") [(B.pack "class", B.pack "lecture")] $ B.concat $ [
+    classedSpan "lectureName" $ escape mdTitle
     , br
---    , classedSpan "lecturer" $ B.pack "Lecturer: " `B.append` maybe (B.pack "?") escape liLecturer
---    , br
---    , classedSpan "semester" $ B.pack "Semester: " `B.append` maybe (B.pack "?") escape liSemester
---    , br
-    , aHrefRel (escape (B.pack (pageOutput page "pdf"))) (escape (B.pack "PDF"))
-    , B.pack " "
+    , classedSpan "lecturer" $ case mdLecturer of
+        Just l -> escape l
+        Nothing -> B.pack "lecturor unknown"
+    , B.pack " / "
+    , classedSpan "semester" $ case mdSemester of
+        Just l -> escape l
+        Nothing -> B.pack "semester unknown"
+    , br
+    ] ++ (case mdPDFData of
+        Nothing -> [tag (B.pack "del") (B.pack "PDF")]
+        Just pd ->
+            [ aHrefRel (escape (B.pack (pageOutput page "pdf"))) (escape (B.pack "PDF"))
+            , B.pack $ " (" ++ show (numberOfPages pd) ++ " pages)"
+            ]
+    ) ++ [
+      B.pack " "
     , aHrefRel (escape (B.pack (pageOutput page "html"))) (escape (B.pack "Sources"))
+    , B.pack " "
+    , aHrefRel (escape (B.pack (editLink page))) (escape (B.pack "Edit"))
     ]
 
 linkto a = aHref (escape a) (escape a)

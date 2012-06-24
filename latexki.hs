@@ -146,7 +146,8 @@ main = do
   	sitemap = sort $ map de2sm inputfiles,
   	wikiConfig = config,
 	recentChanges = rc,
-	existingOutput = foundOutputs
+	existingOutput = foundOutputs,
+        repoPath = repos
 	}
 
   putStr "Find out there is to do.."

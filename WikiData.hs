@@ -12,8 +12,7 @@ data PageInfo = PageInfo {
 	smPageName  :: PageName,
 	smType      :: String,
 	smContent   :: B.ByteString,
-	smModTime   :: ClockTime,
-        smMetaData  :: Maybe MetaData
+	smModTime   :: ClockTime
 }
 instance Eq PageInfo where
  p1 == p2 = smPageName p1 == smPageName p2
@@ -41,7 +40,11 @@ data TexIndex = TexIndex {
 
 data MetaData = MetaData {
     mdTitle :: B.ByteString,
+    mdLecturer :: Maybe B.ByteString,
+    mdSemester :: Maybe B.ByteString,
+    mdState :: Maybe B.ByteString,
     mdIndex :: [TexIndex],
+    mdLastChange :: RawLogEntry,
     mdPDFData :: Maybe PDFData
     }
     deriving (Show, Read)
@@ -55,7 +58,8 @@ data RawLogEntry = RawLogEntry {
 	dateR :: B.ByteString,
 	pathsR :: [String],
 	messageR :: B.ByteString
-	}  -- deriving Show
+	}
+    deriving (Read, Show)
 
 data LogEntry = LogEntry {
 	revision :: Int,
@@ -63,7 +67,8 @@ data LogEntry = LogEntry {
 	date :: B.ByteString,
 	links :: [Link],
 	message :: InlineText,
-	websvn :: Maybe Link }  deriving Show
+	websvn :: Maybe Link } 
+    deriving (Show)
 
 data Link =	WikiLink PageInfo B.ByteString |
 		NewLink String |

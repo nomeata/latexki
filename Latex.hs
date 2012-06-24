@@ -16,8 +16,7 @@ import WikiData
 import Common
 import HtmlStyle
 import PDF
-
-
+import SVN
 
 whileOk []     = return ExitSuccess
 whileOk (x:xs) = do
@@ -162,17 +161,23 @@ procTex tex = do
 		metaData <- if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
 			splitPDF pdfFile pdfInfo
-                        return $ genMetaData tex (Just pdfInfo)
+                        genMetaData tex (Just pdfInfo)
 		 else 
-                        return $ genMetaData tex Nothing
+                        genMetaData tex Nothing
                 saveMetaData tex metaData
                 genHTML tex metaData
 		)]
 
-genMetaData :: PageInfo -> Maybe PDFData -> MetaData
-genMetaData tex mPDF = MetaData title index mPDF
+genMetaData :: PageInfo -> Maybe PDFData -> FileProducer MetaData
+genMetaData tex mPDF = do
+    wi <- getWi
+    lc <- liftIO $ getSVNLastChange (repoPath wi) (pageOutput tex "tex")
+    return $ MetaData title lecturer semester state index lc mPDF
   where
     title = fromMaybe (B.pack (pagename tex)) $ lookup (B.pack "title") $ findSimpleCommands $ smContent tex
+    lecturer = lookup (B.pack "lecturer") $ findSimpleCommands $ smContent tex
+    semester = lookup (B.pack "semester") $ findSimpleCommands $ smContent tex
+    state = lookup (B.pack "scriptstate") $ findSimpleCommands $ smContent tex
     index = getIndex tex
 
 saveMetaData :: PageInfo -> MetaData -> FileProducer ()

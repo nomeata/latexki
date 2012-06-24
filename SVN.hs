@@ -1,9 +1,10 @@
-module SVN (getSVNRecentChanges,updateSVN,coSVN) where
+module SVN (getSVNRecentChanges,getSVNLastChange,updateSVN,coSVN) where
 
 import System.Process
 import System.IO
 import Control.Concurrent
 import qualified Data.ByteString.Lazy.Char8 as B
+import System.FilePath
 
 import Text.XML.HaXml.Parse
 import Text.XML.HaXml.Combinators
@@ -38,6 +39,17 @@ getCurrentRev repos = do
 	let (Document _ _ info _)= xmlParse "svn info" xml
 	return $ read $ verbatim $ find "revision" literal `o` tagWith (=="entry") `o` children $ CElem info noPos
 
+
+getSVNLastChange repos file = do 
+	let options = ["log","--xml","--limit","1","--verbose",datadir </> file]
+	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
+	hClose inp
+        hSetEncoding out utf8
+	xml <- hGetContents out
+	if xml /= xml then return () else return ()
+        forkIO $ waitForProcess pid >> return ()
+	let doc= xmlParse "svn log" xml
+	return $ head $ toLogEntries doc
 
 getSVNRecentChanges repos = do 
 	let options = ["log","--xml","--limit","10","--verbose",datadir]

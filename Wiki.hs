@@ -12,6 +12,7 @@ import Control.Applicative
 import System.FilePath
 import System.Directory
 import qualified Data.ByteString.Lazy.Char8 as B
+import Safe
 
 import BSUtils
 
@@ -173,7 +174,9 @@ genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of
         mbMd <- if ex then do
                 metaDataText <- liftIO $ readFile metaDataFile
                 (metaDataText == metaDataText) `seq` return ()
-                return $ Just (read metaDataText)
+                case readMay metaDataText of
+                    Just md -> return $ Just md
+                    Nothing -> liftIO $ removeFile metaDataFile >> return Nothing
             else return Nothing
         return $ LIElem $ LectureInfo page mbMd
     Nothing   -> return $ Paragraph [Text (B.pack "Lecture file \"" `B.append` file `B.append` B.pack "\" not found.")]
