@@ -44,6 +44,8 @@ run_deps wi page = deps (pageType page) wi page
 deps :: String -> WikiInfo -> PageInfo -> [PageInfo]
 deps "tex" = depsTex 
 deps "part.tex" = depsTex 
+deps "sty" = depsTex 
+deps ""    = depsWiki
 deps _     = \_ _ -> []
 
 do_always wi page = always (pageType page) wi page
@@ -76,7 +78,7 @@ transHull rel = foldl nextPlease [] rel
   where nextPlease :: (Ord a, Eq a) => [(a,S.Set a)] -> (a,S.Set a) -> [(a,S.Set a)]
 	nextPlease done x@(c,d) = (c, newdeps) : done'
 	  where newdeps = d `S.union` (S.unions $ S.toList $ S.map (fromMaybe S.empty . flip lookup done) d)
-	        done'   = map (`trans` x) done 
+	        done'   = map (`trans` (c, newdeps)) done 
 	(c,d) `trans` (c2,d2) = (c, d `S.union` (if c2 `S.member` d then d2 else S.empty))
 
 
@@ -149,7 +151,7 @@ main = do
   let depmap = map (fmap S.toList) $ transHull $ map (\p -> (p,S.fromList (run_deps wi p))) (sitemap wi)
   let always = filter (do_always wi) (sitemap wi)
   putStrLn "Done."
-  
+
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
   producedFiles <- runFileProducer wi $ forM_ (sitemap wi) $ \page -> do 

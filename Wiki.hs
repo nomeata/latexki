@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module Wiki (procWiki, alwaysWiki) where
+module Wiki (procWiki, depsWiki, alwaysWiki) where
 
 
 import System.FilePath
@@ -30,6 +30,10 @@ alwaysUpdate text = mappend (if "!!sitemap!!" `subListOf` lc       then Always "
 alwaysWiki wi page = (B.pack "!!sitemap!!")       `subStringCI` (smContent page) ||
 		     (B.pack "!!recentchanges!!") `subStringCI` (smContent page)
 
+depsWiki :: WikiInfo -> PageInfo -> [PageInfo]
+depsWiki wi wiki = mapMaybe (flip lookupPage (sitemap wi)) $ mapMaybe unLecture $ map parseSpecialLine $ filter isSpecialLine $ map stripWhitespace $ B.split '\n' $ smContent wiki
+  where unLecture (Right (SpecialLecture name)) = Just (PageName (B.unpack name))
+        unLecture _ = Nothing
 
 procWiki :: FileProcessor
 procWiki wiki = do
@@ -126,25 +130,41 @@ mkLink wi a = case lookupPage (PageName (B.unpack a)) (sitemap wi) of
 
 isValidPagename = myAll (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
-parseSpecial :: WikiInfo -> B.ByteString -> FileProducer DocElement
-parseSpecial wi l | cmd == B.pack "hello"
-                  = return $ Paragraph [Text (B.pack "Hello World")]
-	          | cmd == B.pack "sitemap"
-                  = return $ ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
-		  | cmd == B.pack "recentchanges"
-                  = return $ RCElem (map (parseRC wi) (recentChanges wi))
-                  | cmd == B.pack "lecture"
-                  = case args of
-                        [file] -> genLiElem wi file
-                        _ -> return $ Paragraph [Text (B.pack "Invalid argument to \"lecture\": " `B.append` B.unwords args)]
-		  | otherwise
-                  = return $ Paragraph [Text (B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\"")]
+data Special = SpecialHello | SpecialSiteMap | SpecialRecentChanges 
+    | SpecialLecture B.ByteString
+
+parseSpecialLine :: B.ByteString -> Either B.ByteString Special
+parseSpecialLine l | cmd == B.pack "hello"
+                   = return SpecialHello
+	           | cmd == B.pack "sitemap"
+                   = return SpecialSiteMap
+ 	 	   | cmd == B.pack "recentchanges"
+                   = return SpecialRecentChanges
+                   | cmd == B.pack "lecture"
+                   = case args of
+                        [file] -> return (SpecialLecture file)
+                        _ -> Left $ B.pack "Invalid argument to \"lecture\": " `B.append` B.unwords args
+		   | otherwise
+                   = Left $ B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\""
   where
     words = B.words $ takeout (B.pack "!!") l
     cmd = case words of
             [] -> B.pack ""
             c:_ -> B.map toLower c
     args = tail words
+
+parseSpecial :: WikiInfo -> B.ByteString -> FileProducer DocElement
+parseSpecial wi l = case parseSpecialLine l of
+    Right SpecialHello ->
+        return $ Paragraph [Text (B.pack "Hello World")]
+    Right SpecialSiteMap ->
+        return $ ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
+    Right SpecialRecentChanges ->
+        return $ RCElem (map (parseRC wi) (recentChanges wi))
+    Right (SpecialLecture file) ->
+       genLiElem wi file
+    Left err -> 
+        return $ Paragraph [Text err]
 
 genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of 
     Just page -> do
