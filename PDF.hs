@@ -19,9 +19,6 @@ import WikiData
 import ReadDir
 import Common
 
-data PDFIndex = PDFIndex { pdfIndexTitle :: String, pdfIndexPage :: Int, pdfIndexSub :: [PDFIndex] } deriving (Show)
-data PDFData = PDFData { numberOfPages :: Int, pdfIndex :: [PDFIndex] } deriving (Show)
-
 data Fields = NumberOfPages Int | Title String | Level Int | Page Int deriving (Show)
 
 parseField "NumberOfPages"      val = Just (NumberOfPages (read val))
@@ -85,8 +82,10 @@ unfoldElem l (this:sub) = PDFIndex {
 unfoldElems :: Int -> [[Fields]] -> [PDFIndex]
 unfoldElems l = map (unfoldElem l) . groupBy (\_ n -> (level n > l))
 
+parseDumpData :: String -> PDFData
 parseDumpData = putInShape .  partition isIndexField . catMaybes . map getField . lines
 
+getPDFInfo :: FilePath -> IO PDFData
 getPDFInfo file = do
 	let options = [file,"dump_data"]
 	(inp, out, err, pid) <- runInteractiveProcess "pdftk" options Nothing Nothing
@@ -97,6 +96,7 @@ getPDFInfo file = do
         -- forkIO $ waitForProcess pid >> return ()
 	return $ parseDumpData info
 
+formatPDFInfo :: String -> PDFData -> [DocElement]
 formatPDFInfo file info = [
 	Header 3 (B.pack "PDF-Index"),
 	Paragraph $ [Text $ B.pack $ "This PDF-File has "++show(numberOfPages info)++" pages"]] ++

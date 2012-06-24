@@ -25,9 +25,19 @@ data LectureInfo = LectureInfo {
     liName     :: B.ByteString,
     liLecturer :: Maybe B.ByteString,
     liSemester :: Maybe B.ByteString,
-    liMainFile :: PageInfo
+    liMainFile :: PageInfo,
+    liPDFData  :: Maybe PDFData
     }
     deriving Show
+
+data PDFIndex = PDFIndex { pdfIndexTitle :: String, pdfIndexPage :: Int, pdfIndexSub :: [PDFIndex] } deriving (Show)
+data PDFData = PDFData { numberOfPages :: Int, pdfIndex :: [PDFIndex] } deriving (Show)
+
+data TexIndex = TexIndex {
+    tiTitle :: B.ByteString,
+    tiPageFrom :: Int,
+    tiPageTo :: Int}
+    deriving (Show)
 
 type RecentChanges = [LogEntry]
 type RawRecentChanges = [RawLogEntry]

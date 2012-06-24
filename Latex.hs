@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Latex ( procTex, depsTex ) where
 
 import Data.Maybe
@@ -151,20 +152,41 @@ procTex tex = do
 	let htmlFile = pageOutput tex "html"
 	    pdfFile  = pageOutput tex "pdf"
 	    pngFile  = pageOutput tex "png"
+            metaDataFile = pageOutput tex "metadata"
 	--depRes <- needUpdates [htmlFile,pdfFile,pngFile] =<< findDeps tex
 	--let up2date = isUpToDate depRes
 	--liftIO $ showState (pagename tex) depRes
-	return [ ( [htmlFile, pdfFile, pngFile], do
+	return [ ( [htmlFile, pdfFile, pngFile, metaDataFile], do
 		
 		ok <- genPDF tex 
-		if ok then do
+		metaData <- if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
 			splitPDF pdfFile pdfInfo
-			genHTML tex (Just pdfInfo)
+                        return $ genMetaData tex (Just pdfInfo)
 		 else 
-			genHTML tex Nothing
-		) ]
+                        return $ genMetaData tex Nothing
+                saveMetaData tex metaData
+                genHTML tex metaData
+		)]
 
+data MetaData = MetaData {
+    mdTitle :: B.ByteString,
+    mdIndex :: [TexIndex],
+    mdPDFData :: Maybe PDFData
+    }
+    deriving Show
+
+genMetaData :: PageInfo -> Maybe PDFData -> MetaData
+genMetaData tex mPDF = MetaData title index mPDF
+  where
+    title = fromMaybe (B.pack (pagename tex)) $ lookup (B.pack "title") $ findSimpleCommands $ smContent tex
+    index = getIndex tex
+
+saveMetaData :: PageInfo -> MetaData -> FileProducer ()
+saveMetaData tex md = do
+    let outfile = pageOutput tex "metadata"
+    liftIO $ writeFile outfile $ show md
+    
 
 genPDF :: PageInfo -> FileProducer (Bool)
 genPDF tex =  do 
@@ -230,14 +252,14 @@ genPDF tex =  do
 		 replicate 2 latexrun ++
 		 [pngrun]
 
-genHTML :: PageInfo -> Maybe PDFData -> FileProducer ()
-genHTML tex pdfInfo = do 
-	let source = smContent tex
-	let index = getIndex tex source
-	    title = getTitle tex source
+genHTML :: PageInfo -> MetaData -> FileProducer ()
+genHTML tex md = do 
+	let index = formatIndex tex (mdIndex md)
+	    title = mdTitle md
 	    titleline = [Header 1 (B.pack "Latex File: " `B.append` title)]
 	writeHtmlPage target tex (B.unpack title) $ titleline ++ content ++ index ++ pdfIndex ++ preview
-  where pdfIndex = case pdfInfo of
+  where pdfInfo = mdPDFData md
+        pdfIndex = case pdfInfo of
 		Nothing -> []
 		Just info -> formatPDFInfo pdfFile info
         content | isJust pdfInfo = [
@@ -276,17 +298,21 @@ findspans first extract list = findspans' first (map extract list) 1 0
         findspans' current (Just new:xs) a b =  ((a,b), current) : findspans' new     xs (b+1) (b+1)
         findspans' current (Nothing :xs) a b =                     findspans' current xs  a    (b+1)
 
-getIndex :: PageInfo -> B.ByteString -> [DocElement]
-getIndex tex = format . extract . map uncomment . B.lines 
+getIndex :: PageInfo -> [TexIndex]
+getIndex tex = map toTexIndex . extract . map uncomment . B.lines $ smContent tex
   where	extract = findspans (B.pack "Preamble") extract_chapter 
   	extract_chapter line = listToMaybe $ do (command,param) <- findSimpleCommands line
 				                guard $ command == B.pack "chapter"
 				                return param
-	format = (Header 2 (B.pack "Index-Preview"):) . (:[]) . ItemList . map format'
-	  where format' ((a,b),t) = [
-	  				Text (t `B.append` B.pack " "),
-					LinkElem (PlainLink (B.pack $ editLinkLines tex a b) (B.pack "(bearbeiten)")
-					)]
+        toTexIndex ((a,b),t) = TexIndex t a b
+
+formatIndex :: PageInfo -> [TexIndex] -> [DocElement]
+formatIndex tex = (Header 2 (B.pack "Index-Preview"):) . (:[]) . ItemList . map format
+
+  where	format (TexIndex{..}) = [
+            Text (tiTitle `B.append` B.pack " "),
+            LinkElem (PlainLink (B.pack $ editLinkLines tex (tiPageFrom) (tiPageTo)) (B.pack "(bearbeiten)")
+            )]
 
 getTitle tex = fromMaybe (B.pack (pagename tex)) . lookup (B.pack "title") . findSimpleCommands  
 

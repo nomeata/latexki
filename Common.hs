@@ -79,7 +79,7 @@ import WikiData
 -- What produces what
 
 generated_by :: String -> [String]
-generated_by "tex"   = ["html","pdf","png"]
+generated_by "tex"   = ["html","pdf","png","metadata"]
 generated_by "latex" = generated_by "tex"
 generated_by ""      = ["html","pdf"]
 generated_by "css"   = ["html","css"]
