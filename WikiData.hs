@@ -21,6 +21,14 @@ instance Ord PageInfo where
 instance Show PageInfo where
  show p1 = "PageInfo " ++ show (smPageName p1)
 
+data LectureInfo = LectureInfo {
+    liName     :: B.ByteString,
+    liLecturer :: Maybe B.ByteString,
+    liSemester :: Maybe B.ByteString,
+    liMainFile :: PageInfo
+    }
+    deriving Show
+
 type RecentChanges = [LogEntry]
 type RawRecentChanges = [RawLogEntry]
 
@@ -53,7 +61,10 @@ type InlineText = [InlineTextElem]
 
 data DocElement = Paragraph InlineText | EnumList [InlineText] | 
                   ItemList [InlineText] | PreFormat B.ByteString |
-		  Header Int B.ByteString | RCElem RecentChanges | HLine  deriving Show
+		  Header Int B.ByteString | RCElem RecentChanges | 
+                  LIElem LectureInfo |
+                  HLine
+    deriving Show
 		
 
 type Document = [DocElement]  

@@ -1,4 +1,4 @@
-{-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE ImplicitParams, RecordWildCards #-}
 
 module HtmlStyle (htmlPage, writeHtmlPage, tagP, tag, tagL, tagLP, aHref, escape) where
 
@@ -103,8 +103,8 @@ render (ItemList  items) = tag (B.pack "ul") $ B.concat $
 render (PreFormat str)   = tag (B.pack "pre") (escape str)
 render (HLine)           = tag (B.pack "hr") B.empty
 render (Header lev text) = tag (B.pack ("h" ++ show lev)) (escape text)
-render (RCElem changes)  = tagP (B.pack "ol") [(B.pack "id",B.pack "recentChanges")] $ B.concat $
-				map formatChange changes
+render (LIElem li)       = renderLi li
+render (RCElem changes)  = tagP (B.pack "ol") [(B.pack "id",B.pack "recentChanges")] $ B.concat $ map formatChange changes
   where	formatChange entry = tag (B.pack "li") $ tag (B.pack "table") $ B.concat $
                              map (tag (B.pack "tr")) $
 			     map (\(a,b) -> tag (B.pack "th") a `B.append` tag (B.pack "td") b ) $ [ 
@@ -133,6 +133,19 @@ renderLink (DLLink file)        = aHrefRel (escape file)
 					   (escape (file `B.append` B.pack" (download)")) 
 renderLink (PlainLink href txt) = aHref (escape href)                (escape txt)
 
+renderLi (LectureInfo {..}) = tagP (B.pack "div") [(B.pack "class", B.pack "lecture")] $ B.concat [
+    classedSpan "lectureName" $ B.pack "Lecture: " `B.append` escape liName
+    , br
+    , classedSpan "lecturer" $ B.pack "Lecturer: " `B.append` maybe (B.pack "?") escape liLecturer
+    , br
+    , classedSpan "semester" $ B.pack "Semester: " `B.append` maybe (B.pack "?") escape liSemester
+    , br
+    , aHrefRel (escape (B.pack (pageOutput liMainFile "pdf"))) (escape (B.pack "PDF"))
+    , B.pack " "
+    , aHrefRel (escape (B.pack (pageOutput liMainFile "html"))) (escape (B.pack "Sources"))
+    ]
 
 linkto a = aHref (escape a) (escape a)
 
+classedSpan c a = tagP (B.pack "span") [(B.pack "class", B.pack c)] a
+br = tag (B.pack "br") (B.pack "")

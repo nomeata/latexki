@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module LatexStyle (writeLatexPage) where
 
 import WikiData
@@ -114,6 +115,7 @@ render (Header 2 text) = B.pack "\\subsection*{"    `B.append` escape text `B.ap
 render (Header 3 text) = B.pack "\\subsubsection*{" `B.append` escape text `B.append` B.pack "}"
 render (Header 4 text) = B.pack "\\paragraph{"      `B.append` escape text `B.append` B.pack "}"
 render (Header _ text) = B.pack "\\textbf{"         `B.append` escape text `B.append` B.pack "}"
+render (LIElem li)       = renderLi li
 render (RCElem [])     = B.empty
 render (RCElem changes)  = env (B.pack "enumerate") $ B.concat $ map formatChange changes
   where	formatChange entry = (B.pack "\\item " `B.append`) $ env (B.pack "description") $
@@ -139,6 +141,8 @@ renderLink (WikiLink page txt) = aHref (escape (B.pack (pageOutput page "html"))
 renderLink (NewLink page)       = aHref (escape (B.pack (namedNewLink page))) (escape (B.pack (page ++ " (new)")))
 renderLink (DLLink file)        = aHref (escape file)                         (escape (file `B.append` B.pack " (download)"))
 renderLink (PlainLink href txt) = aHref (escape href)                         (escape txt)
+
+renderLi (LectureInfo {..}) = env (B.pack "quote") $ B.pack "Lecture infos for " `B.append` escape liName
 
 linkto a = aHref (escape a) (escape a)
 

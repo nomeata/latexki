@@ -127,8 +127,22 @@ parseSpecial wi l | cmd == B.pack "hello" = Paragraph [Text (B.pack "Hello World
 			-- The next line is a beast
 	          | cmd == B.pack "sitemap" = ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
 		  | cmd == B.pack "recentchanges" = RCElem (map (parseRC wi) (recentChanges wi))
+                  | cmd == B.pack "lecture" = case args of
+                        [file] -> genLiElem wi file
+                        _ ->  Paragraph [Text (B.pack "Invalid argument to \"lecture\": " `B.append` B.unwords args)]
 		  | otherwise               = Paragraph [Text (B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\"")]
-  where cmd = B.map toLower $ takeout (B.pack "!!") l
+  where
+    words = B.words $ takeout (B.pack "!!") l
+    cmd = case words of
+            [] -> B.pack ""
+            c:_ -> B.map toLower c
+    args = tail words
+
+genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of 
+    Just page -> LIElem (LectureInfo file Nothing Nothing page)
+    Nothing   -> Paragraph [Text (B.pack "Lecture file \"" `B.append` file `B.append` B.pack "\" not found.")]
+
+
 
 parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg websvn
   where msg = parseInline wi raw_msg
