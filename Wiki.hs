@@ -7,6 +7,7 @@ import Data.List
 import Data.Char
 import Data.Monoid
 import Data.Maybe
+import Data.Functor
 import System.FilePath
 import qualified Data.ByteString.Lazy.Char8 as B
 
@@ -37,7 +38,7 @@ procWiki wiki = do
 	--let up2date = isUpToDate depRes
 	--liftIO $ showState (pagename wiki) depRes
 	wi <- getWi
-	let parsed = parse wi $ map stripWhitespace $ B.split '\n' content
+	parsed <- parse wi $ map stripWhitespace $ B.split '\n' content
 	return [ 
 		([htmlFile], writeHtmlPage htmlFile wiki (pagename wiki) parsed),
 		([pdfFile],  writeLatexPage wiki  (pagename wiki) parsed)
@@ -48,12 +49,12 @@ stripWhitespace t | B.null t        = t
                   | B.last t == ' ' = stripWhitespace (B.init t)
 		  | otherwise       = t
 
-parse :: WikiInfo -> [B.ByteString] -> Document
-parse wi []                          = []
+parse :: WikiInfo -> [B.ByteString] -> FileProducer Document
+parse wi []                          = return []
 parse wi (l:r)	| B.null l           =                      parse wi r 
-		| hl > 0             = Header hl header   : parse wi r
-		| isSpecialLine l    = parseSpecial wi l  : parse wi r
-		| isHLine l          = HLine              : parse wi r
+		| hl > 0             = (Header hl header   :) <$> parse wi r
+		| isSpecialLine l    = (parseSpecial wi l  :) <$> parse wi r
+		| isHLine l          = (HLine              :) <$> parse wi r
 		| isListLine l       = parseList wi (l:r)
 		| isPreLine  l       = parsePre  wi (l:r)
 		| isParaLine l       = parsePara wi (l:r)
@@ -80,9 +81,9 @@ parseLines :: forall t . WikiInfo
               -> ([t] -> DocElement)
               -> (B.ByteString -> t)
               -> [B.ByteString]
-              -> Document 
+              -> FileProducer Document 
 parseLines wi cond markup mapF lines	| null list = error "Did not find what I should parse"
-					| otherwise = markup (map mapF list) : parse wi rest
+					| otherwise = (markup (map mapF list) :) <$> parse wi rest
 	where (list,rest) = span cond lines
 
 parseInline :: WikiInfo -> B.ByteString -> InlineText
