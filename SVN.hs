@@ -11,6 +11,8 @@ import Text.XML.HaXml.Types
 import Text.XML.HaXml.Posn
 import Text.XML.HaXml.Verbatim
 
+import qualified Data.ByteString.Lazy.UTF8 as UTF8
+
 import WikiData
 
 
@@ -51,10 +53,10 @@ toLogEntries (Document _ _ logs _ ) = map toLogEntry $ elm `o` children $ CElem 
 toLogEntry entry = RawLogEntry revision author date paths message
   where	getElem name = verbatim $ txt `o` children `o` tagWith (==name) `o` children $ entry
   	revision = read $ verbatim $ find "revision" literal $ entry
-	author	 = B.pack $ getElem "author"
-	date	 = B.pack $ getElem "date"
+	author	 = UTF8.fromString $ getElem "author"
+	date	 = UTF8.fromString $ getElem "date"
 	paths	 = map (tail.verbatim) $ txt `o` children `o` tagWith (=="path") `o`
 			 	         	 children `o` tagWith (=="paths") `o` children $ entry
-	message	 = B.pack $ getElem "msg"
+	message	 = UTF8.fromString $ getElem "msg"
 	
 
