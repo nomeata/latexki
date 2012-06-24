@@ -39,6 +39,13 @@ data TexIndex = TexIndex {
     tiPageTo :: Int}
     deriving (Show)
 
+data MetaData = MetaData {
+    mdTitle :: B.ByteString,
+    mdIndex :: [TexIndex],
+    mdPDFData :: Maybe PDFData
+    }
+    deriving Show
+
 type RecentChanges = [LogEntry]
 type RawRecentChanges = [RawLogEntry]
 

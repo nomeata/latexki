@@ -169,13 +169,6 @@ procTex tex = do
                 genHTML tex metaData
 		)]
 
-data MetaData = MetaData {
-    mdTitle :: B.ByteString,
-    mdIndex :: [TexIndex],
-    mdPDFData :: Maybe PDFData
-    }
-    deriving Show
-
 genMetaData :: PageInfo -> Maybe PDFData -> MetaData
 genMetaData tex mPDF = MetaData title index mPDF
   where

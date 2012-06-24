@@ -123,6 +123,7 @@ mkLink wi a = case lookupPage (PageName (B.unpack a)) (sitemap wi) of
 
 isValidPagename = myAll (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
+parseSpecial :: WikiInfo -> B.ByteString -> DocElement
 parseSpecial wi l | cmd == B.pack "hello" = Paragraph [Text (B.pack "Hello World")]
 			-- The next line is a beast
 	          | cmd == B.pack "sitemap" = ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
