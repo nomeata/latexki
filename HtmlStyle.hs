@@ -45,7 +45,7 @@ htmlPage page title body =  do
 		tag (B.pack "body") ((
 			tagP (B.pack "div") [(B.pack "class", B.pack "menu")] $ B.concat $
 			        [ ulist  $ (B.pack "Start page",B.pack (bd ".")) : addmenu 
-				, ulist	 viewMenu
+				--, ulist	 viewMenu
 				, ulist	 [ (B.pack "Edit this", B.pack (bd (editLink page)))
 				         , (B.pack "Create new page", B.pack (bd (newLink)))
 					 ]
