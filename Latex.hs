@@ -160,9 +160,9 @@ procTex tex = do
 		if ok then do
 			pdfInfo <- liftIO $ getPDFInfo pdfFile 
 			splitPDF pdfFile pdfInfo
-			genHTML tex ok (Just pdfInfo)
+			genHTML tex (Just pdfInfo)
 		 else 
-			genHTML tex ok Nothing
+			genHTML tex Nothing
 		) ]
 
 
@@ -230,7 +230,8 @@ genPDF tex =  do
 		 replicate 2 latexrun ++
 		 [pngrun]
 
-genHTML tex ok pdfInfo = do 
+genHTML :: PageInfo -> Maybe PDFData -> FileProducer ()
+genHTML tex pdfInfo = do 
 	let source = smContent tex
 	let index = getIndex tex source
 	    title = getTitle tex source
@@ -239,7 +240,7 @@ genHTML tex ok pdfInfo = do
   where pdfIndex = case pdfInfo of
 		Nothing -> []
 		Just info -> formatPDFInfo pdfFile info
-        content | ok = [
+        content | isJust pdfInfo = [
 			 Paragraph [Text $ B.pack "File successfully created:"],
 			 ItemList [[LinkElem (PlainLink pdfFileLink (B.pack "PDF-File"))],
 			           [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
@@ -253,7 +254,7 @@ genHTML tex ok pdfInfo = do
 			           [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
 			           [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
 			]
-        preview | ok = [
+        preview | isJust pdfInfo = [
 			 Header 2 (B.pack "Preview"),
 			 Paragraph [Image pngFileLink (B.pack "Preview")]
 			]
