@@ -8,6 +8,7 @@ import Data.Char
 import Data.Monoid
 import Data.Maybe
 import Data.Functor
+import Control.Applicative
 import System.FilePath
 import qualified Data.ByteString.Lazy.Char8 as B
 
@@ -53,7 +54,7 @@ parse :: WikiInfo -> [B.ByteString] -> FileProducer Document
 parse wi []                          = return []
 parse wi (l:r)	| B.null l           =                      parse wi r 
 		| hl > 0             = (Header hl header   :) <$> parse wi r
-		| isSpecialLine l    = (parseSpecial wi l  :) <$> parse wi r
+		| isSpecialLine l    = (:) <$> parseSpecial wi l <*> parse wi r
 		| isHLine l          = (HLine              :) <$> parse wi r
 		| isListLine l       = parseList wi (l:r)
 		| isPreLine  l       = parsePre  wi (l:r)
@@ -124,15 +125,19 @@ mkLink wi a = case lookupPage (PageName (B.unpack a)) (sitemap wi) of
 
 isValidPagename = myAll (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
-parseSpecial :: WikiInfo -> B.ByteString -> DocElement
-parseSpecial wi l | cmd == B.pack "hello" = Paragraph [Text (B.pack "Hello World")]
-			-- The next line is a beast
-	          | cmd == B.pack "sitemap" = ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
-		  | cmd == B.pack "recentchanges" = RCElem (map (parseRC wi) (recentChanges wi))
-                  | cmd == B.pack "lecture" = case args of
+parseSpecial :: WikiInfo -> B.ByteString -> FileProducer DocElement
+parseSpecial wi l | cmd == B.pack "hello"
+                  = return $ Paragraph [Text (B.pack "Hello World")]
+	          | cmd == B.pack "sitemap"
+                  = return $ ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
+		  | cmd == B.pack "recentchanges"
+                  = return $ RCElem (map (parseRC wi) (recentChanges wi))
+                  | cmd == B.pack "lecture"
+                  = case args of
                         [file] -> genLiElem wi file
-                        _ ->  Paragraph [Text (B.pack "Invalid argument to \"lecture\": " `B.append` B.unwords args)]
-		  | otherwise               = Paragraph [Text (B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\"")]
+                        _ -> return $ Paragraph [Text (B.pack "Invalid argument to \"lecture\": " `B.append` B.unwords args)]
+		  | otherwise
+                  = return $ Paragraph [Text (B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\"")]
   where
     words = B.words $ takeout (B.pack "!!") l
     cmd = case words of
@@ -141,9 +146,9 @@ parseSpecial wi l | cmd == B.pack "hello" = Paragraph [Text (B.pack "Hello World
     args = tail words
 
 genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of 
-    Just page -> LIElem $
-        LectureInfo page Nothing
-    Nothing   -> Paragraph [Text (B.pack "Lecture file \"" `B.append` file `B.append` B.pack "\" not found.")]
+    Just page -> do
+        return $ LIElem $ LectureInfo page Nothing
+    Nothing   -> return $ Paragraph [Text (B.pack "Lecture file \"" `B.append` file `B.append` B.pack "\" not found.")]
 
 
 
