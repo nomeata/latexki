@@ -152,13 +152,13 @@ main = do
   
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
-  producedFiles <- runFileProducer wi $ flip mapM_ (sitemap wi) $ \page -> do 
+  producedFiles <- runFileProducer wi $ forM_ (sitemap wi) $ \page -> do 
 	x <- return True
   	actions <- run_producer page	
 	let force = page `elem` always
   	flip mapM_ actions $ \(outputs, action) -> do
 		old <- anysOlder (page:fromMaybe [] (lookup page depmap)) outputs
-		flip mapM_ outputs producedFile 
+		forM_ outputs producedFile 
 		when (force || old) $ do
 			liftIO $ putStrLn ("Generating outdated files: " ++ concat (intersperse ", " outputs))
 			action

@@ -151,7 +151,8 @@ de2sm de = PageInfo {
 		smPageName = PageName (dropExtensions (deFileName de)),
 		smType     = dropWhile (=='.') $ takeExtensions (deFileName de),
 		smModTime  = deModTime de,
-		smContent  = deFileContent de
+		smContent  = deFileContent de,
+                smMetaData = Nothing
 		}
 
 type SiteMap = [PageInfo]

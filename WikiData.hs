@@ -12,7 +12,8 @@ data PageInfo = PageInfo {
 	smPageName  :: PageName,
 	smType      :: String,
 	smContent   :: B.ByteString,
-	smModTime   :: ClockTime
+	smModTime   :: ClockTime,
+        smMetaData  :: Maybe MetaData
 }
 instance Eq PageInfo where
  p1 == p2 = smPageName p1 == smPageName p2
@@ -28,23 +29,25 @@ data LectureInfo = LectureInfo {
     liMainFile :: PageInfo,
     liPDFData  :: Maybe PDFData
     }
-    deriving Show
+    deriving (Show)
 
-data PDFIndex = PDFIndex { pdfIndexTitle :: String, pdfIndexPage :: Int, pdfIndexSub :: [PDFIndex] } deriving (Show)
-data PDFData = PDFData { numberOfPages :: Int, pdfIndex :: [PDFIndex] } deriving (Show)
+data PDFIndex = PDFIndex { pdfIndexTitle :: String, pdfIndexPage :: Int, pdfIndexSub :: [PDFIndex] }
+    deriving (Show, Read)
+data PDFData = PDFData { numberOfPages :: Int, pdfIndex :: [PDFIndex] }
+    deriving (Show, Read)
 
 data TexIndex = TexIndex {
     tiTitle :: B.ByteString,
     tiPageFrom :: Int,
     tiPageTo :: Int}
-    deriving (Show)
+    deriving (Show, Read)
 
 data MetaData = MetaData {
     mdTitle :: B.ByteString,
     mdIndex :: [TexIndex],
     mdPDFData :: Maybe PDFData
     }
-    deriving Show
+    deriving (Show, Read)
 
 type RecentChanges = [LogEntry]
 type RawRecentChanges = [RawLogEntry]
