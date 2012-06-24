@@ -251,35 +251,36 @@ genPDF tex =  do
 		 [pngrun]
 
 genHTML :: PageInfo -> MetaData -> FileProducer ()
-genHTML tex md = do 
-	let index = formatIndex tex (mdIndex md)
-	    title = mdTitle md
+genHTML tex (MetaData {..}) = do 
+	let index = formatIndex tex mdIndex
+	    title = mdTitle
 	    titleline = [Header 1 (B.pack "Latex File: " `B.append` title)]
 	writeHtmlPage target tex (B.unpack title) $ titleline ++ content ++ index ++ pdfIndex ++ preview
-  where pdfInfo = mdPDFData md
-        pdfIndex = case pdfInfo of
+  where pdfIndex = case mdPDFData of
 		Nothing -> []
 		Just info -> formatPDFInfo pdfFile info
-        content | isJust pdfInfo = [
-			 Paragraph [Text $ B.pack "File successfully created:"],
-			 ItemList [[LinkElem (PlainLink pdfFileLink (B.pack "PDF-File"))],
-			           [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
-			           [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
-			           [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
-			]
+        content | isJust mdPDFData = [
+                    ItemList [[Text $ B.pack "Lecturer: " `B.append` fromMaybe (B.pack "unknown") mdLecturer],
+                              [Text $ B.pack "Semester: " `B.append` fromMaybe (B.pack "unknown") mdSemester],
+                              [Text $ B.pack "State: " `B.append` fromMaybe (B.pack "unknown") mdState]],
+                    Paragraph [Text $ B.pack "File successfully created:"],
+                    ItemList [[LinkElem (PlainLink pdfFileLink (B.pack "PDF-File"))],
+                              [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
+                              [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
+                              [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
+                    ]
                 | otherwise          = [	
-			 Paragraph [Text (B.pack "File not successfully created:")],
-			 ItemList [[Text $ B.pack "PDF-File (?)"],
-			           [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
-			           [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
-			           [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
-			]
-        preview | isJust pdfInfo = [
-			 Header 2 (B.pack "Preview"),
-			 Paragraph [Image pngFileLink (B.pack "Preview")]
-			]
-                | otherwise          = [
-			]
+                    Paragraph [Text (B.pack "File not successfully created:")],
+                    ItemList [[Text $ B.pack "PDF-File (?)"],
+                              [LinkElem (PlainLink logFileLink (B.pack "Latex-Logfile"))],
+                              [LinkElem (PlainLink outFileLink (B.pack "Latex-Output"))],
+                              [LinkElem (PlainLink texFileLink (B.pack "Latex-Source"))]]
+                    ]
+        preview | isJust mdPDFData = [
+                     Header 2 (B.pack "Preview"),
+                     Paragraph [Image pngFileLink (B.pack "Preview")]
+                    ]
+                | otherwise        = []
 	pdfFile = pageOutput tex "pdf"
 	pdfFileLink = B.pack $ takeFileName $ pageOutput tex "pdf"
 	logFileLink = B.pack $ takeFileName $ pageOutput tex "log"

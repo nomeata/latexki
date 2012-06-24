@@ -81,6 +81,7 @@ tagLP name params body= [B.singleton '<' `B.append` name `B.append` par `B.appen
 		B.singleton ' ' `B.append` p `B.append` B.pack "=\"" `B.append` v `B.append` B.pack "\""
 		) params 
 
+aHrefRelClass c href body = tagP (B.pack "a") [(B.pack "class",c), (B.pack "href", B.pack (backDir ?currentPage </> B.unpack href))] body
 aHrefRel href body = tagP (B.pack "a") [(B.pack "href", B.pack (backDir ?currentPage </> B.unpack href))] body
 aHref href body = tagP (B.pack "a") [(B.pack "href",href)] body
 
@@ -147,7 +148,7 @@ renderLi (LectureInfo page (Just (MetaData {..}))) = tagP (B.pack "div") [(B.pac
     , classedSpan "semester" $ case mdSemester of
         Just l -> escape l
         Nothing -> B.pack "semester unknown"
-    , br
+    , B.pack " / "
     ] ++ (case mdPDFData of
         Nothing -> [tag (B.pack "del") (B.pack "PDF")]
         Just pd ->
@@ -155,10 +156,23 @@ renderLi (LectureInfo page (Just (MetaData {..}))) = tagP (B.pack "div") [(B.pac
             , B.pack $ " (" ++ show (numberOfPages pd) ++ " pages)"
             ]
     ) ++ [
+      br
+    , B.pack "Last update: "
+    , classedSpan "lastDate" $ escape (dateR mdLastChange)
+    , B.pack " by "
+    , classedSpan "lastAuthor" $ escape (authorR mdLastChange)
+    , br
+    ] ++ (case mdPDFData of
+        Nothing -> [(B.pack "Failed to created PDF file")]
+        Just pd ->
+            [ aHrefRelClass (B.pack "pdf") (escape (B.pack (pageOutput page "pdf"))) (escape (B.pack "PDF"))
+            , B.pack $ " (" ++ show (numberOfPages pd) ++ " pages)"
+            ]
+    ) ++ [
       B.pack " "
-    , aHrefRel (escape (B.pack (pageOutput page "html"))) (escape (B.pack "Sources"))
+    , aHrefRelClass (B.pack "info") (escape (B.pack (pageOutput page "html"))) (escape (B.pack "More Info"))
     , B.pack " "
-    , aHrefRel (escape (B.pack (editLink page))) (escape (B.pack "Edit"))
+    , aHrefRelClass (B.pack "edit") (escape (B.pack (editLink page))) (escape (B.pack "Edit"))
     ]
 
 linkto a = aHref (escape a) (escape a)
