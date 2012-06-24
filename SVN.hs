@@ -31,6 +31,7 @@ getCurrentRev repos = do
 	let options = ["info","--xml", datadir]
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
+        hSetEncoding out utf8
 	xml <- hGetContents out
 	-- this fails in instances
         forkIO $ waitForProcess pid >> return ()
@@ -42,6 +43,7 @@ getSVNRecentChanges repos = do
 	let options = ["log","--xml","--limit","10","--verbose",datadir]
 	(inp,out,err,pid) <- runInteractiveProcess "svn" options Nothing Nothing
 	hClose inp
+        hSetEncoding out utf8
 	xml <- hGetContents out
 	if xml /= xml then return () else return ()
         forkIO $ waitForProcess pid >> return ()
