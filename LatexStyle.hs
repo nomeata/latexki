@@ -21,8 +21,8 @@ writeLatexPage page title body = do
 	  readNull <- Just `liftM` openFile "/dev/null" ReadMode
 	  writeLog <- Just `liftM` openFileSafe (pageOutput page ".output") WriteMode
 	  err <- inTargetDir page $ do
-	  	putStrLn $ "Running pdflatex "++takeBaseName (fileRelative page) <.> "tex"
-	  	runProcess "pdflatex" [takeBaseName (fileRelative page) <.> "tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
+	  	--putStrLn $ "Running pdflatex "++takeBaseName (fileRelative page) <.> "tex"
+	  	runProcess "/usr/bin/pdflatex" [takeBaseName (fileRelative page) <.> "tex"] Nothing Nothing readNull writeLog writeLog >>= waitForProcess
 	  case err of
 		ExitFailure _ -> putStrLn (pagename page ++ ": LaTeX failed ("++show err ++")")
 		ExitSuccess   -> return ()

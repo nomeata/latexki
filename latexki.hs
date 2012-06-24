@@ -13,6 +13,7 @@ import Control.Monad
 import Data.List
 import Data.Maybe
 import qualified Data.Set as S
+import Data.Graph
 
 import Dependencies
 import WikiData
@@ -113,6 +114,7 @@ main = do
 	  dupTo logfileFd stdOutput
 	  return ()
 	else return ()		 
+  hSetBuffering stdout NoBuffering
 
   exported <- doesDirectoryExist (datadir++".svn")
   if exported then if "-n" `notElem` opts then updateSVN repos
@@ -152,9 +154,13 @@ main = do
   let always = filter (do_always wi) (sitemap wi)
   putStrLn "Done."
 
+  putStr "Toplogically sorting pages.."
+  let pages = flattenSCCs $ stronglyConnComp $ map (\page -> (page, page, fromMaybe [] (lookup page depmap))) (sitemap wi)
+  putStrLn "Done."
+
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
-  producedFiles <- runFileProducer wi $ forM_ (sitemap wi) $ \page -> do 
+  producedFiles <- runFileProducer wi $ forM_ pages $ \page -> do 
 	x <- return True
   	actions <- run_producer page	
 	let force = page `elem` always

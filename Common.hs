@@ -188,10 +188,8 @@ outputVariant (PageName base) ext = base ++ "-" ++ ext
 inDir dir action = do
 	if not (null dir) then  do
 		cwd <- liftIO $ getCurrentDirectory
-		liftIO $ print $ "Changing Dir to "++dir
 		liftIO $ safeChdir dir
 		ret <- action
-		liftIO $ print $ "Changing Dir to "++cwd
 		liftIO $ setCurrentDirectory cwd
 		return ret
 	  else  action

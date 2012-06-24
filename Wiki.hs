@@ -172,6 +172,7 @@ genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of
         ex <- liftIO $ doesFileExist metaDataFile
         mbMd <- if ex then do
                 metaDataText <- liftIO $ readFile metaDataFile
+                (metaDataText == metaDataText) `seq` return ()
                 return $ Just (read metaDataText)
             else return Nothing
         return $ LIElem $ LectureInfo page mbMd
