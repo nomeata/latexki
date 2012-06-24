@@ -23,11 +23,8 @@ instance Show PageInfo where
  show p1 = "PageInfo " ++ show (smPageName p1)
 
 data LectureInfo = LectureInfo {
-    liName     :: B.ByteString,
-    liLecturer :: Maybe B.ByteString,
-    liSemester :: Maybe B.ByteString,
-    liMainFile :: PageInfo,
-    liPDFData  :: Maybe PDFData
+    liFil :: PageInfo,
+    liMetaData :: Maybe MetaData
     }
     deriving (Show)
 

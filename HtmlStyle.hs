@@ -133,16 +133,20 @@ renderLink (DLLink file)        = aHrefRel (escape file)
 					   (escape (file `B.append` B.pack" (download)")) 
 renderLink (PlainLink href txt) = aHref (escape href)                (escape txt)
 
-renderLi (LectureInfo {..}) = tagP (B.pack "div") [(B.pack "class", B.pack "lecture")] $ B.concat [
-    classedSpan "lectureName" $ B.pack "Lecture: " `B.append` escape liName
+renderLi (LectureInfo page Nothing) = tagP (B.pack "div") [(B.pack "class", B.pack "lecture")] $ B.concat [
+    B.pack "No meta data known about "
+    , aHrefRel (escape (B.pack (pageOutput page "html"))) (escape (B.pack (show (smPageName page))))
+    ]
+renderLi (LectureInfo page (Just (MetaData {..}))) = tagP (B.pack "div") [(B.pack "class", B.pack "lecture")] $ B.concat [
+    classedSpan "lectureName" $ B.pack "Lecture: " `B.append` escape mdTitle
     , br
-    , classedSpan "lecturer" $ B.pack "Lecturer: " `B.append` maybe (B.pack "?") escape liLecturer
-    , br
-    , classedSpan "semester" $ B.pack "Semester: " `B.append` maybe (B.pack "?") escape liSemester
-    , br
-    , aHrefRel (escape (B.pack (pageOutput liMainFile "pdf"))) (escape (B.pack "PDF"))
+--    , classedSpan "lecturer" $ B.pack "Lecturer: " `B.append` maybe (B.pack "?") escape liLecturer
+--    , br
+--    , classedSpan "semester" $ B.pack "Semester: " `B.append` maybe (B.pack "?") escape liSemester
+--    , br
+    , aHrefRel (escape (B.pack (pageOutput page "pdf"))) (escape (B.pack "PDF"))
     , B.pack " "
-    , aHrefRel (escape (B.pack (pageOutput liMainFile "html"))) (escape (B.pack "Sources"))
+    , aHrefRel (escape (B.pack (pageOutput page "html"))) (escape (B.pack "Sources"))
     ]
 
 linkto a = aHref (escape a) (escape a)

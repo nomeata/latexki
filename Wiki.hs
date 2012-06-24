@@ -141,7 +141,7 @@ parseSpecial wi l | cmd == B.pack "hello" = Paragraph [Text (B.pack "Hello World
 
 genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of 
     Just page -> LIElem $
-        LectureInfo file Nothing Nothing page Nothing
+        LectureInfo page Nothing
     Nothing   -> Paragraph [Text (B.pack "Lecture file \"" `B.append` file `B.append` B.pack "\" not found.")]
 
 

@@ -142,7 +142,7 @@ renderLink (NewLink page)       = aHref (escape (B.pack (namedNewLink page))) (e
 renderLink (DLLink file)        = aHref (escape file)                         (escape (file `B.append` B.pack " (download)"))
 renderLink (PlainLink href txt) = aHref (escape href)                         (escape txt)
 
-renderLi (LectureInfo {..}) = env (B.pack "quote") $ B.pack "Lecture infos for " `B.append` escape liName
+renderLi (LectureInfo page _) = env (B.pack "quote") $ B.pack "Lecture infos for " `B.append` escape (B.pack (show page))
 
 linkto a = aHref (escape a) (escape a)
 
