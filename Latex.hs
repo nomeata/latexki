@@ -144,6 +144,7 @@ hasCommand command tex = command  `elem` findSimpleCommands (smContent tex)
 
 usesPST = hasCommand (B.pack "usepackage", B.pack "pst-pdf")
 usesIndex = hasCommand (B.pack "printindex", B.empty)
+usesGlossaries = hasCommand (B.pack "printglossaries", B.empty)
 
 
 procTex :: FileProcessor
@@ -238,6 +239,11 @@ genPDF tex =  do
 				runit ""     "/usr/bin/makeindex" [ pageOutput tex "idx" ]
 			]
 			else []
+	let glossariesqueue = if usesGlossaries tex
+			then [
+				runit ""     "/usr/bin/makeglossaries" [ pageOutput tex "glo" ]
+			]
+			else []
 	
 	let latexrun = 		runit outDir "/usr/bin/pdflatex" [source]
 
@@ -247,6 +253,7 @@ genPDF tex =  do
 		 pstqueue ++
 		 [latexrun] ++
 		 indexqueue ++
+		 glossariesqueue ++
 		 replicate 2 latexrun ++
 		 [pngrun]
 

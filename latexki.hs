@@ -98,6 +98,7 @@ readConfig = do
 		
 
 main = do
+  putStrLn "latexki starting..."
   (opts, [repos, outdir]) <- partition ("-" `isPrefixOf`) `fmap` getArgs
   exists <- doesDirectoryExist outdir
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
