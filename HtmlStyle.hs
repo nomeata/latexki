@@ -50,6 +50,7 @@ htmlPage page title body =  do
 			        [ tag "h1" $ aHref "." mainTitle
                                 , tag "nav" $ ulist $ [
                                         (UTF8.fromString "⌂  Home",B.pack (bd "."))
+                                      , (UTF8.fromString "✑  Guestbook",B.pack (bd "IchWarHier.html"))
                                       , (UTF8.fromString "⚒  HowTo",B.pack (bd "HowTo.html"))
                                       , (UTF8.fromString "✱  Sitemap",B.pack (bd "SiteMap.html"))
                                       , (UTF8.fromString "⌚  Wiki-History",B.pack (bd "RecentChanges.html"))
