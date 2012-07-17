@@ -7,6 +7,7 @@ import System.Process
 import System.IO
 import System.FilePath
 import System.Exit
+import System.Environment
 import Control.Monad
 import Data.Char
 import Data.List
@@ -203,7 +204,11 @@ genPDF tex =  do
   	pdffile  = pageOutput tex "pdf"
   	runLatex = do
 
-	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) ] -- colon to append, not override, default
+        home <- getEnv "HOME"
+
+	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) -- colon to append, not override, default
+                  , ("HOME", home)
+                  , ("PATH", "/usr/local/bin:/usr/bin:/bin")]
 	
 	let runit dir c a = do
 		--let output = realbasename ++ ".output"
