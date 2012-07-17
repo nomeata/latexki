@@ -130,7 +130,7 @@ prepareStripped tex = do
 	 where 
 	 	file = smContent f
 	 	stripped = chaptertitle $ mainPart file 
-		title = fromMaybe (B.pack "No Title") $ lookup (B.pack "title") $ findSimpleCommands file
+		title = cleanupTitle $ fromMaybe (B.pack "No Title") $ lookup (B.pack "title") $ findSimpleCommands file
 		chaptertitle = replaceBS (B.pack "\\maketitle") (B.pack "\\chapter{" `B.append` title `B.append` B.pack "}")
 		mainPart =	B.unlines .
 				takeWhile (not. B.isPrefixOf (B.pack "\\end{document}")) .
@@ -140,6 +140,8 @@ prepareStripped tex = do
 	        stail [] = []
 	        stail l  = tail l
 
+-- Todo: Replace all, find more stuff
+cleanupTitle = replaceBS (B.pack "\\\\") (B.pack " - ")
 
 hasCommand command tex = command  `elem` findSimpleCommands (smContent tex)
 
@@ -176,7 +178,7 @@ genMetaData tex mPDF = do
     lc <- liftIO $ getSVNLastChange (repoPath wi) (pageOutput tex "tex")
     return $ MetaData title lecturer semester state index lc mPDF
   where
-    title = fromMaybe (B.pack (pagename tex)) $ lookup (B.pack "title") $ findSimpleCommands $ smContent tex
+    title = cleanupTitle $ fromMaybe (B.pack (pagename tex)) $ lookup (B.pack "title") $ findSimpleCommands $ smContent tex
     lecturer = lookup (B.pack "lecturer") $ findSimpleCommands $ smContent tex
     semester = lookup (B.pack "semester") $ findSimpleCommands $ smContent tex
     state = lookup (B.pack "scriptstate") $ findSimpleCommands $ smContent tex
