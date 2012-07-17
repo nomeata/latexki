@@ -254,7 +254,7 @@ genPDF tex =  do
 	
 	let latexrun = 		runit outDir "/usr/bin/pdflatex" [source]
 
-	let pngrun =		runit ""     "/usr/bin/convert" [ "-verbose", pdffile ++ "[0]", pageOutput tex "png" ] 
+	let pngrun =		runit ""     "/usr/bin/convert" [ "-verbose", pdffile ++ "[0]", "-resize", "x130", pageOutput tex "png" ] 
 	
 	return $ [clearOutput] ++
 		 pstqueue ++
