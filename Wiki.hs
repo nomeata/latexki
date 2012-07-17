@@ -32,7 +32,12 @@ alwaysWiki wi page = (B.pack "!!sitemap!!")       `subStringCI` (smContent page)
 		     (B.pack "!!recentchanges!!") `subStringCI` (smContent page)
 
 depsWiki :: WikiInfo -> PageInfo -> [PageInfo]
-depsWiki wi wiki = mapMaybe (flip lookupPage (sitemap wi)) $ mapMaybe unLecture $ map parseSpecialLine $ filter isSpecialLine $ map stripWhitespace $ B.split '\n' $ smContent wiki
+depsWiki wi wiki = mapMaybe (flip lookupPage (sitemap wi)) $
+    mapMaybe unLecture $ map parseSpecialLine $
+    filter isSpecialLine $
+    map stripWhitespace $
+    B.split '\n' $
+    smContent wiki
   where unLecture (Right (SpecialLecture name)) = Just (PageName (B.unpack name))
         unLecture _ = Nothing
 

@@ -158,6 +158,7 @@ main = do
   putStrLn "Done."
 
   putStr "Toplogically sorting pages.."
+  --mapM_ print depmap
   let pages = flattenSCCs $ stronglyConnComp $ map (\page -> (page, page, fromMaybe [] (lookup page depmap))) (sitemap wi)
   putStrLn "Done."
 
