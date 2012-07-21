@@ -308,7 +308,7 @@ def print_page(new, basename, ext, content, log, theanswer, rev, conf_rev, error
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 <title>%(title)s</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" media="screen" href="/css/screen.css" />
+<link rel="stylesheet" media="screen" href="/latexki-style.css" />
 </head>
 <body class="editlatex">
 <h1>%(title)s</h1>
