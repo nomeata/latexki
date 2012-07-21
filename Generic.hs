@@ -37,6 +37,6 @@ procGeneric isBinary page = do
 procCopyGen page = liftM2 (++) (procCopy page) (procGeneric Nothing page)
 
 procCopy :: FileProcessor
-procCopy page = return [([outfile],  liftIO (copyFile (pageInput page) outfile))]
+procCopy page = return [([outfile],  liftIO (copyFileSafe (pageInput page) outfile))]
   where	outfile = pageOutput page (pageType page)
 

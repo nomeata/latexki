@@ -34,8 +34,8 @@ producer :: String -> PageInfo -> FileProducer [ ([FilePath], FileProducer () ) 
 producer "tex"   = procTex 
 producer "latex" = producer "tex"
 producer ""      = procWiki
-producer "css"   = procCopyGen 
-producer "js"   = procCopyGen 
+producer "css"   = procCopy
+producer "js"    = procCopy
 producer "png"   = procImage 
 producer "jpg"   = procImage
 producer "eps"   = procGeneric (Just True)

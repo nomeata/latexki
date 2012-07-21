@@ -53,6 +53,7 @@ module Common (
 	writeFileSafe,
 	appendFileSafe,
 	openFileSafe,
+	copyFileSafe,
 	safeRemoveFile,
 
 	directoryFiles,
@@ -148,8 +149,8 @@ pagename PageInfo {smPageName = PageName pn} = pn
 
 de2sm :: DirEntry -> PageInfo
 de2sm de = PageInfo {
-		smPageName = PageName (dropExtensions (deFileName de)),
-		smType     = dropWhile (=='.') $ takeExtensions (deFileName de),
+		smPageName = PageName (dropExtension (deFileName de)),
+		smType     = dropWhile (=='.') $ takeExtension (deFileName de),
 		smModTime  = deModTime de,
 		smContent  = deFileContent de
 		}
@@ -214,6 +215,9 @@ appendFileSafe file str = do
 openFileSafe file mode = do
 	createDirectoryIfMissing True (takeDirectory file)
 	openFile file mode
+copyFileSafe from to = do
+	createDirectoryIfMissing True (takeDirectory to)
+	copyFile from to
 
 safeRemoveFile file = do exists <- doesFileExist file
                          if exists then removeFile file else return ()
