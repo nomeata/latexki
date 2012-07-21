@@ -213,11 +213,11 @@ renderLi (LectureInfo page (Just (MetaData {..}))) = tagP "div" [("class", "lect
                 , classedSpan "l4" "e"
                 , classedSpan "l5" "X"
                 , ": "
-                , aHrefRelClass "info" (escape (B.pack (pageOutput page "html"))) (escape "Source")
+                , aHrefRelClass "info" (escape (B.pack (pageInput page))) (escape "Source")
                 , " | "
-                , aHrefRelClass "info" (escape (B.pack (pageOutput page "html"))) (escape "Output")
+                , aHrefRelClass "info" (escape (B.pack (pageOutput page "output"))) (escape "Output")
                 , " | "
-                , aHrefRelClass "info" (escape (B.pack (pageOutput page "html"))) (escape "Logfile")
+                , aHrefRelClass "info" (escape (B.pack (pageOutput page "log"))) (escape "Logfile")
                 ]
             ]
         ]
