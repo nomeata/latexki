@@ -28,20 +28,21 @@ htmlPage page title body =  do
 	    addmenu       =  map (\f -> (B.pack f,B.pack (bd (f++".html"))) ) $ words addmenuconf
 	    viewMenu      =  map (\e -> (B.pack ("View as "++e),B.pack (bd (pageOutput page e))))  exts
 	return $
-	  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" `B.append` (
+	  "<!doctype html>" `B.append` (
 	  tag "html" ((
 		tag "head" ( B.concat [
-			tagP "meta" 
-				[("http-equiv","Content-Type"),
-				 ("content","text/html; charset=UTF-8")] B.empty,
+			tagP "meta" [("charset","utf-8")] B.empty,
 			tag "title" $
 				mainTitle `B.append` " - " `B.append` B.pack title,
 			tagP "meta" 
 				[("name","viewport"),
 				 ("content","width=device-width, initial-scale=1.0")] B.empty,
+                        tagP "meta"
+                                [("http-equiv","X-UA-Compatible"),
+                                 ("content","IE=edge,chrome=1")] B.empty,
 			tagP "link" 
 				[("rel","stylesheet"),
-				 ("type","text/css"),
+				 ("media","screen"),
 				 ("href",B.pack stylefile)     ] B.empty
 		])
 	  ) `B.append` (
