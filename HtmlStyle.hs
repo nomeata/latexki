@@ -187,12 +187,23 @@ renderLi (LectureInfo page (Just (MetaData {..}))) = tagP "div" [("class", "lect
           tagP "p" [("class","changed")] $ B.concat [
               escape (dateR mdLastChange), " by ", escape (authorR mdLastChange)
             ]
-        , tag "div" $ B.concat [
-            tagP "a" [("class","openDialog"), ("href","#")]
-                "Inhaltsverzeichnis / Kapitelweises bearbeiten"
-            , tagP "div" [("class","dialogMessage"), ("title","Inhaltsverzeichnis")] $
-                tag "ol" B.empty
-            , tag "p" $ classedSpan "latexhtml" $ B.concat [
+        , tag "div" $
+            (if length mdIndex > 1
+            then B.concat [
+                tagP "a" [("class","openDialog"), ("href","#")]
+                    "Inhaltsverzeichnis / kapitelweises bearbeiten"
+                , tagP "div" [("class","dialogMessage"), ("title","Inhaltsverzeichnis")] $
+                    tag "ol" $ B.concat $
+                        let toContentLi (TexIndex {..}) = tag "li" $ B.concat [
+                                tiTitle , " ",
+                                -- aHrefRelClass "pdf" "#" "PDF",
+                                aHrefRelClass "edit" (escape (B.pack (editLinkLines page tiPageFrom tiPageTo))) (UTF8.fromString "✎ Edit")
+                                ]
+                        in map toContentLi mdIndex
+                ]
+            else B.empty)
+            `B.append` B.concat [
+              tag "p" $ classedSpan "latexhtml" $ B.concat [
                   classedSpan "l1" "L"
                 , classedSpan "l2" "a"
                 , classedSpan "l3" "T"
