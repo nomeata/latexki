@@ -13,6 +13,8 @@ import Data.Maybe
 import Control.Monad
 import Data.List
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Time
+import System.Locale
 
 
 writeLatexPage page title body = do
@@ -122,7 +124,8 @@ render (RCElem changes)  = env (B.pack "enumerate") $ B.concat $ map formatChang
                              B.concat $ map (\(a,b) -> B.concat [B.pack "\\item[",a,B.pack "] ", b] ) $ [ 
   		(B.pack "Revision:",B.pack $             show   $ revision entry),
   		(B.pack "Author:"  ,                     escape $ author   entry),
-  		(B.pack "Date:",                         escape $ date     entry),
+  		(B.pack "Date:", escape $ B.pack $ formatTime defaultTimeLocale rfc822DateFormat $ date entry),
+
   		(B.pack "Message:", B.concat $ map renderInline $ message  entry),
   		(B.pack "Changed Files:",(env (B.pack "itemize") $ B.concat $
 					map ((B.pack "\\item " `B.append`) . renderLink) (links entry)))

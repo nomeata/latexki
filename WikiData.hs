@@ -2,6 +2,7 @@ module WikiData where
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import System.Time
+import Data.Time
 
 
 newtype PageName = PageName String deriving (Eq, Ord)
@@ -55,7 +56,7 @@ type RawRecentChanges = [RawLogEntry]
 data RawLogEntry = RawLogEntry {
 	revisionR :: Int,
 	authorR :: B.ByteString,
-	dateR :: B.ByteString,
+	dateR :: ZonedTime,
 	pathsR :: [String],
 	messageR :: B.ByteString
 	}
@@ -64,7 +65,7 @@ data RawLogEntry = RawLogEntry {
 data LogEntry = LogEntry {
 	revision :: Int,
 	author :: B.ByteString,
-	date :: B.ByteString,
+	date :: ZonedTime,
 	links :: [Link],
 	message :: InlineText,
 	websvn :: Maybe Link } 

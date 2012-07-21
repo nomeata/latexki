@@ -5,6 +5,8 @@ import System.IO
 import Control.Concurrent
 import qualified Data.ByteString.Lazy.Char8 as B
 import System.FilePath
+import Data.Time
+import System.Locale
 
 import Text.XML.HaXml.Parse
 import Text.XML.HaXml.Combinators
@@ -14,7 +16,7 @@ import Text.XML.HaXml.Verbatim
 
 import qualified Data.ByteString.Lazy.UTF8 as UTF8
 
-import WikiData
+import WikiData hiding (Document)
 
 
 {-
@@ -49,7 +51,8 @@ getSVNLastChange repos file = do
 	if xml /= xml then return () else return ()
         forkIO $ waitForProcess pid >> return ()
 	let doc= xmlParse "svn log" xml
-	return $ head $ toLogEntries doc
+        tz <- getCurrentTimeZone
+	return $ head $ toLogEntries tz doc
 
 getSVNRecentChanges repos = do 
 	let options = ["log","--xml","--limit","10","--verbose",datadir]
@@ -60,17 +63,20 @@ getSVNRecentChanges repos = do
 	if xml /= xml then return () else return ()
         forkIO $ waitForProcess pid >> return ()
 	let doc= xmlParse "svn log" xml
-	return $ toLogEntries doc
+        tz <- getCurrentTimeZone
+	return $ toLogEntries tz doc
 
-toLogEntries (Document _ _ logs _ ) = map toLogEntry $ elm `o` children $ CElem logs
+toLogEntries :: TimeZone -> Document Posn -> [RawLogEntry]
+toLogEntries tz (Document _ _ logs _ ) = map (toLogEntry tz) $ elm `o` children $ CElem logs
  noPos
-toLogEntry entry = RawLogEntry revision author date paths message
+toLogEntry tz entry = RawLogEntry revision author date paths message
   where	getElem name = verbatim $ txt `o` children `o` tagWith (==name) `o` children $ entry
   	revision = read $ verbatim $ find "revision" literal $ entry
 	author	 = UTF8.fromString $ getElem "author"
-	date	 = UTF8.fromString $ getElem "date"
+	date	 = utcToZonedTime tz $ readTime defaultTimeLocale svnTimeFormat (getElem "date")
 	paths	 = map (tail.verbatim) $ txt `o` children `o` tagWith (=="path") `o`
 			 	         	 children `o` tagWith (=="paths") `o` children $ entry
 	message	 = UTF8.fromString $ getElem "msg"
 	
 
+svnTimeFormat = "%Y-%m-%dT%H:%M:%S%Q%Z"

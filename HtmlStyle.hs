@@ -13,6 +13,8 @@ import Data.List
 import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.ByteString.Lazy.UTF8 as UTF8
+import Data.Time
+import System.Locale
 
 writeHtmlPage file page title body =
     liftIO . (writeFileSafe file) =<< htmlPage page title body 
@@ -142,7 +144,7 @@ render (RCElem changes)  = tagP "ol" [("id","recentChanges")] $ B.concat $ map f
 			     map (\(a,b) -> tag "th" a `B.append` tag "td" b ) $ [ 
   		("Revision:", B.pack $   show         $ revision entry),
   		("Author:",              escape       $ author   entry),
-  		("Date:",                escape       $ date     entry),
+  		("Date:",                escape       $ B.pack $ formatTime defaultTimeLocale rfc822DateFormat $ date entry),
   		("Message:", tag "p" $  B.concat $
 					map renderInline $ message entry),
   		("Changed Files:", tag "ul" $ B.concat $
@@ -188,7 +190,10 @@ renderLi (LectureInfo page (Just (MetaData {..}))) = tagP "div" [("class", "lect
     , tag "h4" "More"
     , tagP "div" [("class","more")] $ B.concat $ [
           tagP "p" [("class","changed")] $ B.concat [
-              escape (dateR mdLastChange), " by ", escape (authorR mdLastChange)
+              "Last change ",
+              escape $ B.pack $ formatTime defaultTimeLocale rfc822DateFormat $ dateR mdLastChange,
+              " by ",
+              escape (authorR mdLastChange)
             ]
         , tag "div" $
             (if length mdIndex > 1
