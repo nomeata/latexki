@@ -301,13 +301,16 @@ def print_page(new, basename, ext, content, log, theanswer, rev, conf_rev, error
                    'conftext':conftext, 'rev':rev, 'comment':esc(log), 'theanswer':esc(theanswer),
                    'linetext':linetext }
     print (u'''
-<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
+<!doctype html>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 <title>%(title)s</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" media="screen" href="/css/screen.css" />
 </head>
-<boddy>
+<body class="editlatex">
 <h1>%(title)s</h1>
 %(error)s
 %(form)s
