@@ -171,8 +171,11 @@ renderLi (LectureInfo page Nothing) = tagP "div" [("class", "lecture")] $ B.conc
     ]
 renderLi (LectureInfo page (Just (MetaData {..}))) = tagP "div" [("class", "lecture")] $ B.concat $ [
     tag "h3" $ escape mdTitle `B.append` aHrefRelClass "edit" (escape (B.pack (editLink page))) (UTF8.fromString "✎ Edit")
-    , aHrefRelClassTitle "Dieses Dokument als PDF" "pdf" (B.pack (backDir ?currentPage </> pageOutput page "pdf")) $
-        tag "span" "PDF" `B.append` tagP "img" [("src",B.pack (backDir ?currentPage </> pageOutput page "png"))] B.empty
+    , case mdPDFData of 
+        Nothing -> B.empty
+        Just (PDFData {..}) ->
+            aHrefRelClassTitle ("PDF-File (" `B.append` B.pack (show numberOfPages) `B.append` " pages)") "pdf" (B.pack (backDir ?currentPage </> pageOutput page "pdf")) $
+                tag "span" "PDF" `B.append` tagP "img" [("src",B.pack (backDir ?currentPage </> pageOutput page "png"))] B.empty
     , tag "p" $ B.concat [
           classedSpan "lecturer" $ case mdLecturer of
             Just l -> escape l
