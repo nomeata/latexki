@@ -168,7 +168,7 @@ parseSpecial wi l = case parseSpecialLine l of
     Right SpecialHello ->
         return $ Paragraph [Text (B.pack "Hello World")]
     Right SpecialSiteMap ->
-        return $ ItemList $ map (\page -> [LinkElem (mkPageLink wi page)]) $ sort $ sitemap wi
+        return $ ItemList $ map (\page -> [LinkElem (mkPageLink wi page), Text (dotIfNotNull (B.pack (pageType page)))]) $ sort $ sitemap wi
     Right SpecialRecentChanges ->
         return $ RCElem (map (parseRC wi) (recentChanges wi))
     Right (SpecialLecture file) ->
@@ -210,3 +210,4 @@ takeout  sub str = B.drop (B.length sub) $ B.take (B.length str - B.length sub) 
 sub `myIsSuffixOf` str =  B.length str >= B.length sub && sub == (B.drop (B.length str - B.length sub) str)
 myAll p s = B.foldr (\c b -> p c && b) True s
 myAny p s = B.foldr (\c b -> p c || b) False s
+dotIfNotNull s = if B.null s then s else "." `B.append` s
