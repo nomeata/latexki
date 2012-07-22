@@ -9,6 +9,7 @@ import System.Posix.IO
 import System.FilePath
 import System.Directory
 import System.Environment
+import System.Posix.Files
 import Control.Monad
 import Data.List
 import Data.Maybe
@@ -54,6 +55,8 @@ do_always wi page = always (pageType page) wi page
 
 always "" = alwaysWiki
 always _  = (\_ _ -> False)
+
+link_dirs = ["res", "js", "css"]
 
 {-
 actions file = do 
@@ -118,17 +121,27 @@ main = do
 	else return ()		 
   hSetBuffering stdout NoBuffering
 
-  exported <- doesDirectoryExist (datadir++".svn")
+  exported <- doesDirectoryExist (datadir </> ".svn")
   if exported then if "-n" `notElem` opts then updateSVN repos
 	                                  else return ()
               else                             coSVN repos
+
+  putStr "Linking directories..."
+  forM_ link_dirs $ \dir -> do
+    ex <- doesDirectoryExist dir
+    unless ex $ do
+        createSymbolicLink (datadir </> dir) dir
+        putStr $ " " ++ dir
+  putStrLn " done."
 
   putStr "Reading Configuration..."
   config <- readConfig
   putStrLn "done."
 
   putStr "Reading Directory..."
-  inputfiles <- filter (not . isPrefixOf (normalise datadir) . deFileName) `liftM`
+  inputfiles <- filter (\f -> 
+                    all (\d -> not (d `isPrefixOf` deFileName f)) link_dirs
+                ) `liftM`
   		readDir datadir
 
 --  (sm, todo) <- unzip `fmap` mapM actions inputfiles
@@ -187,6 +200,7 @@ main = do
       		filter (`notElem` producedFiles) $
       		filter (`notElem` systemFiles) $
 		filter (not . isPrefixOf datadir ) $
+                filter (\f -> not $ any (`isPrefixOf` f) link_dirs) $
       		foundOutputs
   putStrLn $ "Deleting "++(show (length delete) ) ++ " old or temporary files:\n" ++ concat (intersperse ", " delete)
   --mapM_ (\f -> putStrLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
