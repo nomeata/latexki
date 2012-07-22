@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Rank2Types,OverloadedStrings #-}
 module Wiki (procWiki, depsWiki, alwaysWiki) where
 
 
@@ -82,7 +82,7 @@ isPreLine = B.isPrefixOf (B.singleton ' ')
 isSpecialLine = (B.pack "!!" `encloses`)
 isHLine l = B.length l >= 4 && myAll (`elem` "=-_") l
 isParaLine l = not (isListLine l) && not (isPreLine l) && not (B.null l) &&
-               not (fst (parseHeader l) > 0) && not (isSpecialLine l)
+               not (fst (parseHeader l) > 0) && not (isSpecialLine l) && not (isHLine l)
 
 parseList wi = parseLines wi isListLine  ItemList  (parseInline wi . B.tail)
 parsePre  wi = parseLines wi isPreLine  (PreFormat . B.unlines) B.tail
@@ -103,6 +103,7 @@ parseInline wi t | B.null t              = []
                  | isBlockedLink	 = Text skword                 : parseInline wi skrest
 		 | isCamelCase word      = LinkElem (mkLink wi word)   : parseInline wi wrest 
                  | isBracketLink         = LinkElem (mkLink wi link)   : parseInline wi (B.tail lrest)
+                 | isBlockedBracketLink  = Text (B.concat ["[",blink,"]"]) : parseInline wi (B.tail blrest)
 		 | isWebLink		 = LinkElem (PlainLink wlink wlink) :
 		 							 parseInline wi wlrest
 		 | not (B.null space)    = Text space                  : parseInline wi srest
@@ -111,6 +112,7 @@ parseInline wi t | B.null t              = []
 		 | isBrokenBlock         = Text (B.take 1 t)           : parseInline wi (B.tail t)
 		 | otherwise             = error $ "Unhandled case in parseInline: "++ B.unpack t
   where	(link, lrest)     = B.span (not . (== ']')) (B.tail t)
+       	(blink, blrest)   = B.span (not . (== ']')) (B.tail (B.tail t))
   	(word, wrest)     = B.span isAlphaNum t
   	(skword, skrest)  = B.span isAlphaNum (B.tail t) -- skip !
   	(space, srest)    = B.span isNormalNonWord t
@@ -119,6 +121,8 @@ parseInline wi t | B.null t              = []
 	isBlockedLink     = B.head t == '!' && isCamelCase skword
 	isBrokenBlock	  = B.singleton '!' `B.isPrefixOf` t && not isBlockedLink
 	isBrokenLink	  = B.singleton '[' `B.isPrefixOf` t && not isBracketLink
+	isBlockedBracketLink
+                          = "![" `B.isPrefixOf` t  && not (B.null blrest) && isValidPagename blink 
 	isBracketLink     = B.singleton '[' `B.isPrefixOf`t  && not (B.null lrest) && isValidPagename link 
 	isWebLink         = (B.pack "http://") `B.isPrefixOf` t
 	isWebLinkChar c   = isAlphaNum c || c `elem` ":/_.-~?=#" -- more to add?
