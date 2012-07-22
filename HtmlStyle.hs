@@ -182,14 +182,9 @@ renderLi (LectureInfo page (Just (MetaData {..}))) = tagP "div" [("class", "lect
         Just (PDFData {..}) ->
             aHrefRelClass "pdf" (B.pack (backDir ?currentPage </> pageOutput page "pdf")) $
                 tag "span" "PDF" `B.append` tagP "img" [("src",B.pack (backDir ?currentPage </> pageOutput page "png")), ("title", "PDF-File (" `B.append` B.pack (show numberOfPages) `B.append` " pages)")] B.empty
-    , tag "p" $ B.concat [
-          classedSpan "lecturer" $ case mdLecturer of
-            Just l -> escape l
-            Nothing -> "lecturor unknown"
-        , " | "
-        , classedSpan "semester" $ case mdSemester of
-            Just l -> escape l
-            Nothing -> "semester unknown"
+    , tag "p" $ B.concat $ intersperse " | " $ catMaybes [
+          fmap (classedSpan "lecturer" . escape) mdLecturer
+        , fmap (classedSpan "semester" . escape) mdSemester
         ]
     , tag "h4" "More"
     , tagP "div" [("class","more")] $ B.concat $ [
