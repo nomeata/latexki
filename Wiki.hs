@@ -52,8 +52,8 @@ procWiki wiki = do
 	wi <- getWi
 	parsed <- parse wi $ map stripWhitespace $ B.split '\n' content
 	return [ 
-		([htmlFile], writeHtmlPage htmlFile wiki (pagename wiki) parsed),
-		([pdfFile],  writeLatexPage wiki  (pagename wiki) parsed)
+		([htmlFile], writeHtmlPage htmlFile wiki (pagename wiki) parsed)
+		-- ([pdfFile],  writeLatexPage wiki  (pagename wiki) parsed)
 		]
 
 stripWhitespace :: B.ByteString -> B.ByteString
