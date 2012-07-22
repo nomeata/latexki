@@ -84,6 +84,7 @@ findSimpleCommands (_:rest)                       				= findSimpleCommands rest
 depCmds = [
 	(B.pack "input",["tex","part.tex"]),
 	(B.pack "include",["tex","part.tex"]),
+	(B.pack "bibliography",["bib"]),
 	(B.pack "usepackage",["sty"]),
 	(B.pack "includegraphics",["","png"] )
 	]
@@ -146,6 +147,7 @@ cleanupTitle = replaceBS (B.pack "\\\\") (B.pack " - ")
 hasCommand command tex = command  `elem` findSimpleCommands (smContent tex)
 
 usesPST = hasCommand (B.pack "usepackage", B.pack "pst-pdf")
+usesBibtex tex = B.pack "bibliography" `elem` map fst (findSimpleCommands (smContent tex))
 usesIndex = hasCommand (B.pack "printindex", B.empty)
 usesGlossaries = hasCommand (B.pack "printglossaries", B.empty)
 
@@ -209,6 +211,7 @@ genPDF tex =  do
         home <- getEnv "HOME"
 
 	let env = [ ("TEXINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) -- colon to append, not override, default
+                  , ("BIBINPUTS",".:" ++ concatMap (++":") (dirTrail realsource)) -- colon to append, not override, default
                   , ("HOME", home)
                   , ("PATH", "/usr/local/bin:/usr/bin:/bin")]
 	
@@ -246,6 +249,11 @@ genPDF tex =  do
 				runit ""     "/usr/bin/makeindex" [ pageOutput tex "idx" ]
 			]
 			else []
+	let bibtexqueue = if usesBibtex tex
+			then [
+				runit ""     "/usr/bin/bibtex" [ pageOutput tex "aux" ]
+			]
+			else []
 	let glossariesqueue = if usesGlossaries tex
 			then [
 				runit ""     "/usr/bin/makeglossaries" [ pageOutput tex "glo" ]
@@ -263,6 +271,7 @@ genPDF tex =  do
 		 pstqueue ++
 		 [latexrun] ++
 		 indexqueue ++
+		 bibtexqueue ++
 		 glossariesqueue ++
 		 replicate 2 latexrun ++
 		 pngrun
