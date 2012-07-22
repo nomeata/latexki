@@ -283,7 +283,7 @@ def print_page(new, basename, ext, content, log, theanswer, rev, conf_rev, error
     <form action="%(self_uri)s" method="POST">
     %(pageform)s
     <h3>Content</h3>
-    <textarea name="content" cols="80" rows="30">%(content)s</textarea>
+    <textarea id="content" name="content" cols="80" rows="30">%(content)s</textarea>
     <input type="hidden" name="revision" value="%(rev)i"/>
     <h3>Commit log entry</h3>
     Please describe your changes. This is mandatory.<br/>
@@ -309,13 +309,25 @@ def print_page(new, basename, ext, content, log, theanswer, rev, conf_rev, error
 <title>%(title)s</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" media="screen" href="/latexki-style.css" />
+<script src="/js/CodeMirror-2.31/lib/codemirror.js"></script>
+<link rel="stylesheet" href="/js/CodeMirror-2.31/lib/codemirror.css">
+%(mode)s
 </head>
 <body class="editlatex">
 <h1>%(title)s</h1>
 %(error)s
 %(form)s
+<script type="text/javascript"> 
+var editor = CodeMirror.fromTextArea(document.getElementById('content'), {
+    lineNumbers: true,
+    lineWrapping: true,
+    firstLineNumber: %(line_from)d,
+});
+</script>
 </body>
-</html>''' % { 'title': esc(title), 'form': form, 'error': errortext}).encode('utf8')
+</html>''' % { 'title': esc(title), 'form': form, 'error': errortext,
+                'mode': '<script src="/js/CodeMirror-2.31/mode/stex/stex.js"></script>' if ext == 'tex' else  '', 'line_from': 1 if line_from is None else line_from
+        }).encode('utf8')
 
 
 def print_success(new, basename, ext, new_rev):
