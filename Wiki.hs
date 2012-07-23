@@ -194,7 +194,9 @@ genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of
 
 parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg websvn
   where msg = parseInline wi raw_msg
-  	links = flip map paths $ \path -> case lookupPage (PageName (dropExtensions path)) (sitemap wi) of
+        filtered_paths = filter (\f -> all (\d -> not (d `isPrefixOf` f)) (linkDirs wi)) paths
+  	links = flip map filtered_paths $ \path ->
+            case lookupPage (PageName (dropExtensions path)) (sitemap wi) of
 			Just page -> mkPageLink wi page
 			Nothing   -> NewLink (dropExtensions path)
 	websvn = fmap websvnlink (lookup "websvn" (wikiConfig wi))
