@@ -263,7 +263,7 @@ genPDF tex =  do
 	let latexrun = 		runit outDir "/usr/bin/pdflatex" [source]
 
 	let pngrun =    [
-                                runit ""     "/usr/bin/convert" [ "-verbose", pdffile ++ "[0]", "-resize", "92x", pageOutput tex "png" ] 
+                                runit ""     "/usr/bin/convert" [ "-verbose", pdffile ++ "[0]", "-resize", "70x", pageOutput tex "png" ] 
                         ,       runit ""    "/usr/bin/optipng" [ "-verbose", pageOutput tex "png" ]
                         ]
 	
