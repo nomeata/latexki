@@ -142,10 +142,13 @@ render (RCElem changes)  = tagP "ol" [("id","recentChanges")] $ B.concat $ map f
   		("Author:",              escape       $ author   entry),
   		("Date:",                escape       $ B.pack $ formatTime defaultTimeLocale rfc822DateFormat $ date entry),
   		("Message:", tag "p" $  B.concat $
-					map renderInline $ message entry),
-  		("Changed Files:", tag "ul" $ B.concat $
-					map (tag "li" . renderLink) $ links  entry)
-		] ++ (maybeToList $ fmap (\link -> ("Diff:", renderLink link)) (websvn entry))
+					map renderInline $ message entry)
+                ] ++ (
+                    if null (links entry) then [] else
+                    [("Changed Files:", tag "ul" $ B.concat $ map (tag "li" . renderLink) $ links  entry)]
+                ) ++ (
+                    maybeToList $ fmap (\link -> ("Diff:", renderLink link)) (websvn entry)
+                )
 
 renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link
