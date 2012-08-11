@@ -79,14 +79,7 @@ htmlPage page title body =  do
                     , tagP "div" [("class", "hr hr2")] $ tag "hr" B.empty
                     ]
                 , B.concat $ map (\s -> tagP "script" [("src", B.pack $ bd s)] " ") [
-                      "js/jquery-1.7.2.min.js"
-                    , "js/jquery-ui-1.8.21.custom.min.js"
-                    , "js/SocialSharePrivacy/jquery.socialshareprivacy.js"
-                    , "js/SocialSharePrivacy/jquery.socialshareprivacy.facebook.js"
-                    , "js/SocialSharePrivacy/jquery.socialshareprivacy.twitter.js"
-                    , "js/SocialSharePrivacy/jquery.socialshareprivacy.gplus.js"
-                    , "js/SocialSharePrivacy/jquery.socialshareprivacy.flattr.js"
-                    , "js/latexki.js"
+                      "js/minimized.js"
                     ]
                 ]
 	  )))
