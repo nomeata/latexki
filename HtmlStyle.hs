@@ -89,7 +89,7 @@ htmlPage page title body =  do
         li' (c,t,l,c') = tagP "li" [("class",c)] $ tagP "a" [("href",l),("title",t),("class",c')] $ tag "i" t
   	ulist    = tag "ul" . B.concat . map li
   	ulist'    = tag "ul" . B.concat . map li'
-      	stylefile = bd "latexki-style.css"
+      	stylefile = bd "css/screen.css"
 	bd = (backDir page </>)
         hr = tagP "div" [("class", "hr")] $ tag "hr" B.empty
 

@@ -308,7 +308,7 @@ def print_page(new, basename, ext, content, log, theanswer, rev, conf_rev, error
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 <title>%(title)s</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" media="screen" href="/latexki-style.css" />
+<link rel="stylesheet" media="screen" href="/css/screen.css" />
 <script src="/js/CodeMirror-2.31/lib/codemirror.js"></script>
 <link rel="stylesheet" href="/js/CodeMirror-2.31/lib/codemirror.css">
 %(mode)s
