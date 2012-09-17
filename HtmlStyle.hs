@@ -52,22 +52,23 @@ htmlPage page title body =  do
 			tagP "header" [("id", "msw_top")] $ B.concat $
 			        [ tag "h1" $ aHref "." mainTitle
                                 , tag "nav" $ ulist $ [
-                                        (UTF8.fromString "⌂  Home",B.pack (bd "."))
-                                      , (UTF8.fromString "✑  Guestbook",B.pack (bd "IchWarHier.html"))
+                                        ("Home",B.pack (bd "."),"icon-home")
+                                      , ("Guestbook",B.pack (bd "IchWarHier.html"), "icon-heart")
                                       --, (UTF8.fromString "⚒  HowTo",B.pack (bd "HowTo.html"))
-                                      , (UTF8.fromString "✱  Sitemap",B.pack (bd "SiteMap.html"))
-                                      , (UTF8.fromString "⌚  Wiki-History",B.pack (bd "RecentChanges.html"))
-                                      , (UTF8.fromString "⌘  About",B.pack (bd "About.html"))
+                                      , ("Sitemap",B.pack (bd "SiteMap.html"),"icon-sitemap")
+                                      , ("Wiki-History",B.pack (bd "RecentChanges.html"), "icon-time")
+                                      , ("About",B.pack (bd "About.html"), "icon-question-sign")
                                       ]
                                 , hr
                                 ]
 		, tagP "div" [("class","body")] $
 		            B.concat $ [
                                 tagP "nav" [("class", "page_nav")] $ ulist' $ [
-                                        ("editPage","Edit this page",B.pack (bd (editLink page)),UTF8.fromString "✎")
-                                      --, ("history","Changes",".",UTF8.fromString "↺")
-                                      , ("new","New Document",B.pack (bd newLink),UTF8.fromString "✚")
-                                      , ("totop","Back to top","#msw_top",UTF8.fromString "⬆")
+                                        ("tocLink","TOC for this page",B.pack "#","icon-list-ul")
+                                      , ("editPage","Edit this page",B.pack (bd (editLink page)),"icon-pencil")
+                                      --, ("history","Changes",".","icon-time")
+                                      , ("new","New Document",B.pack (bd newLink),"icon-plus")
+                                      , ("totop","Back to top","#msw_top","icon-arrow-up")
                                       ]
                             , tagP "div" [("class","page")] $ B.concat $ [ hr ] ++ map render body
                             ]
@@ -84,8 +85,8 @@ htmlPage page title body =  do
                 ]
 	  )))
 
-  where	li (t,l) = tag "li" $ aHref l $ t
-        li' (c,t,l,d) = tagP "li" [("class",c)] $ tagP "a" [("href",l),("title",t)] d
+  where	li (t,l,c) = tag "li" $ tagP "a" [("href",l), ("class",c)] $ t
+        li' (c,t,l,c') = tagP "li" [("class",c)] $ tagP "a" [("href",l),("title",t),("class",c')] $ tag "i" t
   	ulist    = tag "ul" . B.concat . map li
   	ulist'    = tag "ul" . B.concat . map li'
       	stylefile = bd "latexki-style.css"
