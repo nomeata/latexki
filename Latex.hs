@@ -108,14 +108,15 @@ texInclCmds = [B.pack "input", B.pack "include"]
 prepareStripped :: PageInfo -> FileProducer ()
 prepareStripped tex = do
 	let file = smContent tex
+	let dir = takeDirectory (pagename tex)
 	let commands = findSimpleCommands file
-	    candits = map B.unpack $ map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
+	    candits = map (dir </>) $ map B.unpack $ map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
 	wi <- getWi
 	let todo = catMaybes $ map (find wi) candits
 	sequence (map snd todo)
 	mapM_ prepareStripped $ map fst todo
  where  find wi candit = do
- 		file <- lookupPage (PageName candit) (sitemap wi)
+ 		file <- lookupPage (PageName (dropExtensions candit)) (sitemap wi)
 		method <- lookup (smType file) methods
 		return $ (file,  method file (pageOutput file "tex"))
 {- where  find candit = liftM listToMaybe $ filterM (doesFileExist.fst) [ 
