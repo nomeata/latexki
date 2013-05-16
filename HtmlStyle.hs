@@ -173,7 +173,7 @@ renderLink (DLLink file)        = aHrefRel (escape file)
 renderLink (PlainLink href txt) = aHref (escape href)                (escape txt)
 
 renderLi (LectureInfo page Nothing) = tagP "div" [("class", "lecture")] $ B.concat [
-    "No meta data known about "
+    "No metadata known about "
     , aHrefRel (escape (B.pack (pageOutput page "html"))) (escape (B.pack (show (smPageName page))))
     ]
 renderLi (LectureInfo page (Just (MetaData {..}))) = tagP "div" [("class", "lecture")] $ B.concat $ [
