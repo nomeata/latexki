@@ -1,9 +1,7 @@
 module WikiData where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-import System.Time
 import Data.Time
-
 
 newtype PageName = PageName String deriving (Eq, Ord)
 instance Show PageName where
@@ -13,7 +11,7 @@ data PageInfo = PageInfo {
 	smPageName  :: PageName,
 	smType      :: String,
 	smContent   :: B.ByteString,
-	smModTime   :: ClockTime
+	smModTime   :: UTCTime
 }
 instance Eq PageInfo where
  p1 == p2 = smPageName p1 == smPageName p2

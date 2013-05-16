@@ -6,14 +6,14 @@ module ReadDir (
 import System.FilePath hiding (makeRelative)
 import System.Directory
 import System.IO.Unsafe
-import System.Time
+import Data.Time.Clock
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 
 data DirEntry = DirEntry { 
 	deFileName :: FilePath,
-	deModTime  :: ClockTime,
+	deModTime  :: UTCTime,
 	deFileContent :: LB.ByteString
 } deriving (Show)
 
