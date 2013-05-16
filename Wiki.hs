@@ -140,8 +140,8 @@ mkLink wi a = case lookupPage (PageName (B.unpack a)) (sitemap wi) of
 
 isValidPagename = myAll (\c -> isAlphaNum c || c `elem` "_-/" ) 
 
-data Special = SpecialHello | SpecialSiteMap | SpecialRecentChanges 
-    | SpecialLecture B.ByteString
+data Special = SpecialHello | SpecialSiteMap | SpecialRecentChanges
+    | SpecialLecture B.ByteString | SpecialLectureSearch
 
 parseSpecialLine :: B.ByteString -> Either B.ByteString Special
 parseSpecialLine l | cmd == B.pack "hello"
@@ -154,6 +154,8 @@ parseSpecialLine l | cmd == B.pack "hello"
                    = case args of
                         [file] -> return (SpecialLecture file)
                         _ -> Left $ B.pack "Invalid argument to \"lecture\": " `B.append` B.unwords args
+ 	 	   | cmd == B.pack "lecturesearch"
+                   = return SpecialLectureSearch
 		   | otherwise
                    = Left $ B.pack "Unknown Command \"" `B.append` cmd `B.append` B.pack "\""
   where
@@ -172,7 +174,9 @@ parseSpecial wi l = case parseSpecialLine l of
     Right SpecialRecentChanges ->
         return $ RCElem (map (parseRC wi) (recentChanges wi))
     Right (SpecialLecture file) ->
-       genLiElem wi file
+        genLiElem wi file
+    Right SpecialLectureSearch ->
+        return LectureSearch 
     Left err -> 
         return $ Paragraph [Text err]
 

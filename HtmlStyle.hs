@@ -150,6 +150,11 @@ render (RCElem changes)  = tagP "ol" [("id","recentChanges")] $ B.concat $ map f
                 ) ++ (
                     maybeToList $ fmap (\link -> ("Diff:", renderLink link)) (websvn entry)
                 )
+render LectureSearch     = tagP "input" [
+    ("class","lectureSearch"),
+    ("placeholder","Search lectures...."),
+    ("title", "Enter some text here to search the document's titles, lecturers and year.")
+    ] B.empty
 
 renderInline (Text str)      = escape str
 renderInline (LinkElem link) = renderLink link

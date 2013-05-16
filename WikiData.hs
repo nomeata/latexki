@@ -83,7 +83,7 @@ type InlineText = [InlineTextElem]
 data DocElement = Paragraph InlineText | EnumList [InlineText] | 
                   ItemList [InlineText] | PreFormat B.ByteString |
 		  Header Int B.ByteString | RCElem RecentChanges | 
-                  LIElem LectureInfo |
+                  LIElem LectureInfo | LectureSearch |
                   HLine
     deriving Show
 		
