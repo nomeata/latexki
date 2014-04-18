@@ -82,6 +82,7 @@ htmlPage page title body =  do
                 , B.concat $ map (\s -> tagP "script" [("src", B.pack $ bd s)] " ") [
                       "js/minimized.js"
                     ]
+                , piwik
                 ]
 	  )))
 
@@ -233,3 +234,5 @@ linkto a = aHref (escape a) (escape a)
 
 classedSpan c a = tagP "span" [("class", B.pack c)] a
 br = tag "br" ""
+
+piwik = B.pack "<!-- Piwik --> <script type=\"text/javascript\"> var _paq = _paq || []; _paq.push(['trackPageView']); _paq.push(['enableLinkTracking']); (function() { var u=((\"https:\" == document.location.protocol) ? \"https\" : \"http\") + \"://nomeata.de/piwik/\"; _paq.push(['setTrackerUrl', u+'piwik.php']); _paq.push(['setSiteId', 1]); var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0]; g.type='text/javascript'; g.defer=true; g.async=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s); })(); </script> <noscript><p><img src=\"http://nomeata.de/piwik/piwik.php?idsite=1\" style=\"border:0;\" alt=\"\" /></p></noscript> <!-- End Piwik Code -->"
