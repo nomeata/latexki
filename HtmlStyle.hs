@@ -140,7 +140,7 @@ render (RCElem changes)  = tagP "ol" [("id","recentChanges")] $ B.concat $ map f
   where formatChange entry = tag "li" $ tag "table" $ B.concat $
                              map (tag "tr") $
                              map (\(a,b) -> tag "th" a `B.append` tag "td" b ) $ [ 
-                ("Revision:", B.pack $   show         $ revision entry),
+                ("Revision:",            escape       $ hash  entry),
                 ("Author:",              escape       $ author   entry),
                 ("Date:",                escape       $ B.pack $ formatTime defaultTimeLocale rfc822DateFormat $ date entry),
                 ("Message:", tag "p" $  B.concat $

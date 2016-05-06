@@ -17,7 +17,7 @@ import WikiData
 import Common
 import HtmlStyle
 import PDF
---import SVN
+import GIT
 
 whileOk []     = return ExitSuccess
 whileOk (x:xs) = do
@@ -112,9 +112,9 @@ prepareStripped tex = do
         let commands = findSimpleCommands file
             candits = map (dir </>) $ map B.unpack $ map snd $ filter (\(c,f) -> c `elem` texInclCmds) commands
         wi <- getWi
-        let todo = catMaybes $ map (find wi) candits
-        sequence (map snd todo)
-        mapM_ prepareStripped $ map fst todo
+        let todo = mapMaybe (find wi) candits
+        mapM_ snd todo
+        mapM_ (prepareStripped . fst) todo
  where  find wi candit = do
                 file <- lookupPage (PageName (dropExtensions candit)) (sitemap wi)
                 method <- lookup (smType file) methods
@@ -178,8 +178,8 @@ procTex tex = do
 genMetaData :: PageInfo -> Maybe PDFData -> FileProducer MetaData
 genMetaData tex mPDF = do
     wi <- getWi
-    -- lc <- liftIO $ getSVNLastChange (repoPath wi) (pageOutput tex "tex")
-    return $ MetaData title lecturer semester state index mPDF
+    lc <- liftIO $ getGitLastChange (pageOutput tex "tex")
+    return $ MetaData title lecturer semester state index lc mPDF
   where
     title = cleanupTitle $ fromMaybe (B.pack (pagename tex)) $ lookup (B.pack "title") $ findSimpleCommands $ smContent tex
     lecturer = lookup (B.pack "lecturer") $ findSimpleCommands $ smContent tex

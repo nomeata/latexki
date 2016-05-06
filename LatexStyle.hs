@@ -121,7 +121,7 @@ render (RCElem [])     = B.empty
 render (RCElem changes)  = env (B.pack "enumerate") $ B.concat $ map formatChange changes
   where formatChange entry = (B.pack "\\item " `B.append`) $ env (B.pack "description") $
                              B.concat $ map (\(a,b) -> B.concat [B.pack "\\item[",a,B.pack "] ", b] ) $ [ 
-                (B.pack "Revision:",B.pack $             show   $ revision entry),
+                (B.pack "Revision:",                     escape $ hash entry),
                 (B.pack "Author:"  ,                     escape $ author   entry),
                 (B.pack "Date:", escape $ B.pack $ formatTime defaultTimeLocale rfc822DateFormat $ date entry),
 

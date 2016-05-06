@@ -43,7 +43,7 @@ data MetaData = MetaData {
     mdSemester :: Maybe B.ByteString,
     mdState :: Maybe B.ByteString,
     mdIndex :: [TexIndex],
-    --mdLastChange :: RawLogEntry,
+    mdLastChange :: RawLogEntry,
     mdPDFData :: Maybe PDFData
     }
     deriving (Show, Read)
@@ -52,7 +52,7 @@ type RecentChanges = [LogEntry]
 type RawRecentChanges = [RawLogEntry]
 
 data RawLogEntry = RawLogEntry {
-        revisionR :: Int,
+        hashR :: B.ByteString,
         authorR :: B.ByteString,
         dateR :: ZonedTime,
         pathsR :: [String],
@@ -61,7 +61,7 @@ data RawLogEntry = RawLogEntry {
     deriving (Read, Show)
 
 data LogEntry = LogEntry {
-        revision :: Int,
+        hash :: B.ByteString,
         author :: B.ByteString,
         date :: ZonedTime,
         links :: [Link],

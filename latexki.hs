@@ -23,7 +23,7 @@ import Wiki
 import Latex
 import Generic
 import ImageFile
--- import SVN
+import GIT
 import ReadDir
 
 import Data.Map ((!))
@@ -131,6 +131,9 @@ main = do
 --  (sm, todo) <- unzip `fmap` mapM actions inputfiles
   putStrLn $ (show $ length inputfiles) ++ " base files."
 
+  putStr "Generating Recent Changes.."
+  rc <- if "-n" `notElem` opts then getGitRecentChanges else return []
+  putStrLn "Done."
 
   putStr "Finding existing files.."
   foundOutputs <- filter (not . isPrefixOf (normalise datadir) . deFileName) `liftM`
@@ -140,7 +143,7 @@ main = do
   let wi = WikiInfo {
         sitemap = sort $ map de2sm inputfiles,
         wikiConfig = config,
-        recentChanges = [],
+        recentChanges = rc,
         existingOutput = foundOutputs,
         linkDirs = link_dirs
         }

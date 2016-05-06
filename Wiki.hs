@@ -200,15 +200,14 @@ genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of
 
 
 
-parseRC wi (RawLogEntry rev auth date paths raw_msg) = LogEntry rev auth date links msg websvn
+parseRC wi (RawLogEntry hash auth date paths raw_msg) = LogEntry hash auth date links msg (Just githublink)
   where msg = parseInline wi raw_msg
         filtered_paths = filter (\f -> all (\d -> not (d `isPrefixOf` f)) (linkDirs wi)) paths
         links = flip map filtered_paths $ \path ->
             case lookupPage (PageName (dropExtensions path)) (sitemap wi) of
                         Just page -> mkPageLink wi page
                         Nothing   -> NewLink (dropExtensions path)
-        websvn = fmap websvnlink (lookup "websvn" (wikiConfig wi))
-        websvnlink url = PlainLink (B.pack (url ++ "?op=comp&compare[]=/@" ++ show (rev-1) ++ "&compare[]=/@" ++ show rev)) (B.pack "WebSVN Changes")
+        githublink = PlainLink (B.pack "https://github.com/nomeata/mitschriebwiki/commit/" `B.append` hash) (B.pack "GitHub commit")
 
 encloses sub str = sub `B.isPrefixOf` str && sub `myIsSuffixOf` str && B.length str > 2 * B.length sub
 --encloses sub str = sub `isPrefixOf` str && sub `isSuffixOf` str && length str > 2 * length sub
