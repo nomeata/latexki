@@ -15,6 +15,7 @@ import Data.List
 import WikiData
 import Common
 
+lineRest0 = many (noneOf "\n") <* newline
 lineRest = many1 (noneOf "\n") <* newline
 
 parseLogEntry :: TimeZone -> Parser RawLogEntry
@@ -27,7 +28,7 @@ parseLogEntry tz = do
     string "Date:" >> many1 space
     dateR <- readGitTime tz <$> lineRest
     endOfLine
-    messageR <- B.pack . unlines <$> many1 (string "    " >> lineRest)
+    messageR <- B.pack . unlines <$> many1 (string "    " >> lineRest0)
     endOfLine
     pathsR <- filter (not . ("." `isPrefixOf`)) <$> many lineRest
     return $ RawLogEntry {..}
