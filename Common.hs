@@ -181,7 +181,8 @@ pageType page = smType page
 pageOutput PageInfo {smPageName = pn, smType = t} ext =      outputFile pn ext 
 pageVariant PageInfo {smPageName = pn, smType = t} ext =     outputVariant pn ext 
 pageOutputs PageInfo {smPageName = pn, smType = t}    = map (outputFile pn) $ generated_by t 
-pageInput PageInfo {smPageName = pn, smType = t}      = datadir </> outputFile pn t
+pageInputName PageInfo {smPageName = pn, smType = t}    = outputFile pn t
+pageInput pi   = datadir </> pageInputName pi
 
 outputFile    (PageName base) ext = base <.> ext
 outputVariant (PageName base) ext = base ++ "-" ++ ext
@@ -239,13 +240,13 @@ dirTrail' path = dirTrail' $ dropWhile (/='/')  path
 backDir' path = joinPath $ replicate (length (splitPath path) - 1) ".."
 backDir  page = backDir' (pagename page)
 
-editLink page  =  "cgi/edit" </> pagename page
-namedNewLink page  =  "cgi/edit" </> page
+editLink page  =  "https://github.com/nomeata/mitschriebwiki/edit/master/" ++ pageInputName page
+namedNewLink page  =  "https://github.com/nomeata/mitschriebwiki/edit/master/" ++ page
 newLink =  "cgi/edit"
 fileRelative :: PageInfo -> String
 fileRelative page = backDir page </> pageInput page
 
-editLinkLines page from to  = backDir page </> "cgi/edit/" ++ (pagename page) ++ "?lines=" ++ show from ++ "-" ++ show to
+editLinkLines page from to = editLink page ++ "#L" ++ show from
 
 triple1 (x,_,_) = x
 triple2 (_,x,_) = x

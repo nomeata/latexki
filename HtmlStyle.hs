@@ -65,9 +65,9 @@ htmlPage page title body =  do
                             B.concat $ [
                                 tagP "nav" [("class", "page_nav")] $ ulist' $ [
                                         ("tocLink","TOC for this page",B.pack "#","icon-list-ul")
-                                      , ("editPage","Edit this page",B.pack (bd (editLink page)),"icon-pencil")
+                                      , ("editPage","Edit this page",B.pack (editLink page),"icon-pencil")
                                       --, ("history","Changes",".","icon-time")
-                                      , ("new","New Document",B.pack (bd newLink),"icon-plus")
+                                      , ("new","New Document",B.pack newLink,"icon-plus")
                                       , ("totop","Back to top","#msw_top","icon-arrow-up")
                                       ]
                             , tagP "div" [("class","page")] $ B.concat $ [ hr ] ++ map render body
