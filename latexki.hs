@@ -23,7 +23,7 @@ import Wiki
 import Latex
 import Generic
 import ImageFile
-import SVN
+-- import SVN
 import ReadDir
 
 import Data.Map ((!))
@@ -60,10 +60,10 @@ link_dirs = ["res", "js", "css"]
 
 {-
 actions file = do 
-	let  (basename, ext)  = splitWikiPath file
-	     withExt e        = basename++"."++e
-	     (exts, producer) = pipes ext
-	     sitemapEntry     = (basename, ext, exts)
+        let  (basename, ext)  = splitWikiPath file
+             withExt e        = basename++"."++e
+             (exts, producer) = pipes ext
+             sitemapEntry     = (basename, ext, exts)
         return $ (sitemapEntry, producer file)
 -}
 
@@ -76,55 +76,39 @@ anyM2 cond list1 list2 = mapM (uncurry cond) [(a,b) | a <- list1 , b <- list2] >
 deriv `notDerived` files = not $ any (isStrip deriv) files
   where isStrip deriv file = takeExtension deriv == takeExtension file &&
                              dropExtensions deriv == dropExtensions file
-			  
+                          
 -- Transitive Hull
 transHull :: (Ord a, Eq a) => [(a,S.Set a)]  -> [(a,S.Set a)]
 transHull rel = foldl nextPlease [] rel
   where nextPlease :: (Ord a, Eq a) => [(a,S.Set a)] -> (a,S.Set a) -> [(a,S.Set a)]
-	nextPlease done x@(c,d) = (c, newdeps) : done'
-	  where newdeps = d `S.union` (S.unions $ S.toList $ S.map (fromMaybe S.empty . flip lookup done) d)
-	        done'   = map (`trans` (c, newdeps)) done 
-	(c,d) `trans` (c2,d2) = (c, d `S.union` (if c2 `S.member` d then d2 else S.empty))
+        nextPlease done x@(c,d) = (c, newdeps) : done'
+          where newdeps = d `S.union` (S.unions $ S.toList $ S.map (fromMaybe S.empty . flip lookup done) d)
+                done'   = map (`trans` (c, newdeps)) done 
+        (c,d) `trans` (c2,d2) = (c, d `S.union` (if c2 `S.member` d then d2 else S.empty))
 
 
 readConfig = do 
-	exists <- doesFileExist file
-	if exists then
-		return.(map extract).(filter (not.isComment)).lines =<< readFile file
-	  else
-		return []
-  where file = datadir </> "latexki-main.wiki-conf"		
-  	isComment ('#':_) = True
-	isComment l  | all (`elem` whitespace) l = True
-	             | otherwise            = False
+        exists <- doesFileExist file
+        if exists then
+                return.(map extract).(filter (not.isComment)).lines =<< readFile file
+          else
+                return []
+  where file = datadir </> "latexki-main.wiki-conf"             
+        isComment ('#':_) = True
+        isComment l  | all (`elem` whitespace) l = True
+                     | otherwise            = False
         extract l = let (p1,':':p2) = span (/=':') l in (p1, dropWhile (`elem` whitespace) p2)
-	whitespace = " \t"
-		
+        whitespace = " \t"
+                
 
 main = do
   putStrLn "latexki starting..."
-  (opts, [repos, outdir]) <- partition ("-" `isPrefixOf`) `fmap` getArgs
+  (opts, [datadir, outdir]) <- partition ("-" `isPrefixOf`) `fmap` getArgs
   exists <- doesDirectoryExist outdir
   unless exists $ ioError $ userError $ "Outdir "++outdir++" does not exist"
   setCurrentDirectory outdir
 
   -- Setting thigs up (e.g. loggin, svn updating)
-
-  terminal <- hIsTerminalDevice stdout
-  if not terminal then do
-  	-- if we try to run this program on windows, this might make problems
-	  logfile   <- openFile logfilename WriteMode
-	  logfileFd <- handleToFd logfile
-	  dupTo logfileFd stdError
-	  dupTo logfileFd stdOutput
-	  return ()
-	else return ()		 
-  hSetBuffering stdout NoBuffering
-
-  exported <- doesDirectoryExist (datadir </> ".svn")
-  if exported then if "-n" `notElem` opts then updateSVN repos
-	                                  else return ()
-              else                             coSVN repos
 
   putStr "Linking directories..."
   forM_ link_dirs $ \dir -> do
@@ -142,29 +126,24 @@ main = do
   inputfiles <- filter (\f -> 
                     all (\d -> not (d `isPrefixOf` deFileName f)) link_dirs
                 ) `liftM`
-  		readDir datadir
+                readDir datadir
 
 --  (sm, todo) <- unzip `fmap` mapM actions inputfiles
   putStrLn $ (show $ length inputfiles) ++ " base files."
 
 
-  putStr "Generating Recent Changes.."
-  rc <- if "-n" `notElem` opts then getSVNRecentChanges repos else return []
-  putStrLn "Done."
-  
   putStr "Finding existing files.."
   foundOutputs <- filter (not . isPrefixOf (normalise datadir) . deFileName) `liftM`
-  			readDir ""
+                        readDir ""
   putStrLn "Done."
 
   let wi = WikiInfo {
-  	sitemap = sort $ map de2sm inputfiles,
-  	wikiConfig = config,
-	recentChanges = rc,
-	existingOutput = foundOutputs,
-        repoPath = repos,
+        sitemap = sort $ map de2sm inputfiles,
+        wikiConfig = config,
+        recentChanges = [],
+        existingOutput = foundOutputs,
         linkDirs = link_dirs
-	}
+        }
 
   putStr "Find out there is to do.."
   let depmap = map (fmap S.toList) $ transHull $ map (\p -> (p,S.fromList (run_deps wi p))) (sitemap wi)
@@ -179,15 +158,15 @@ main = do
   putStrLn "Generating files as needed.."
   -- This is where all the action happens
   producedFiles <- runFileProducer wi $ forM_ pages $ \page -> do 
-	x <- return True
-  	actions <- run_producer page	
-	let force = page `elem` always
-  	flip mapM_ actions $ \(outputs, action) -> do
-		old <- anysOlder (page:fromMaybe [] (lookup page depmap)) outputs
-		forM_ outputs producedFile 
-		when (force || old) $ do
-			liftIO $ putStrLn ("Generating outdated files: " ++ concat (intersperse ", " outputs))
-			action
+        x <- return True
+        actions <- run_producer page    
+        let force = page `elem` always
+        flip mapM_ actions $ \(outputs, action) -> do
+                old <- anysOlder (page:fromMaybe [] (lookup page depmap)) outputs
+                forM_ outputs producedFile 
+                when (force || old) $ do
+                        liftIO $ putStrLn ("Generating outdated files: " ++ concat (intersperse ", " outputs))
+                        action
 
   -- Debug:
   --putStrLn $ "Produced: "++show producedFiles
@@ -197,12 +176,12 @@ main = do
   let systemFiles = [logfilename]
       putStrExts   = [".log",".output"]
       delete =  filter (\f -> not $ any (takeExtension f ==) putStrExts) $
-		filter (`notDerived` producedFiles) $ 
-      		filter (`notElem` producedFiles) $
-      		filter (`notElem` systemFiles) $
-		filter (not . isPrefixOf datadir ) $
+                filter (`notDerived` producedFiles) $ 
+                filter (`notElem` producedFiles) $
+                filter (`notElem` systemFiles) $
+                filter (not . isPrefixOf datadir ) $
                 filter (\f -> not $ any (`isPrefixOf` f) (linkDirs wi)) $
-      		foundOutputs
+                foundOutputs
   putStrLn $ "Deleting "++(show (length delete) ) ++ " old or temporary files:\n" ++ concat (intersperse ", " delete)
   --mapM_ (\f -> putStrLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
   mapM_ removeFile delete
