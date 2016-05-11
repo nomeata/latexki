@@ -174,7 +174,7 @@ main = do
                 filter (`notElem` producedFiles) $
                 filter (`notElem` systemFiles) $
                 filter (not . isPrefixOf datadir ) $
-                filter (\f -> not $ any (`isPrefixOf` f) (linkDirs wi)) $
+                filter (\f -> not $ any (`isPrefixOf` f) (ignoredDirs wi)) $
                 foundOutputs
   putStrLn $ "Deleting "++(show (length delete) ) ++ " old or temporary files:\n" ++ concat (intersperse ", " delete)
   --mapM_ (\f -> putStrLn ("Deleting old or temporary file  "++f)  >> removeFile f) delete
