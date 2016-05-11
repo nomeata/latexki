@@ -163,7 +163,7 @@ data WikiInfo = WikiInfo {      sitemap :: SiteMap,
                                 wikiConfig :: [(String,String)],
                                 recentChanges :: RawRecentChanges,
                                 existingOutput :: [DirEntry],
-                                linkDirs :: [FilePath]
+                                ignoredDirs :: [FilePath]
                         }
 
 getSiteMap = sitemap `liftM` getWi

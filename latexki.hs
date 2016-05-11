@@ -56,7 +56,7 @@ do_always wi page = always (pageType page) wi page
 always "" = alwaysWiki
 always _  = (\_ _ -> False)
 
-link_dirs = ["res", "js", "css"]
+ignore_dirs = ["res", "js", "css"]
 
 {-
 actions file = do 
@@ -99,7 +99,6 @@ readConfig = do
                      | otherwise            = False
         extract l = let (p1,':':p2) = span (/=':') l in (p1, dropWhile (`elem` whitespace) p2)
         whitespace = " \t"
-                
 
 main = do
   putStrLn "latexki starting..."
@@ -110,21 +109,13 @@ main = do
 
   -- Setting thigs up (e.g. loggin, svn updating)
 
-  putStr "Linking directories..."
-  forM_ link_dirs $ \dir -> do
-    ex <- doesDirectoryExist dir
-    unless ex $ do
-        createSymbolicLink (datadir </> dir) dir
-        putStr $ " " ++ dir
-  putStrLn " done."
-
   putStr "Reading Configuration..."
   config <- readConfig
   putStrLn "done."
 
   putStr "Reading Directory..."
   inputfiles <- filter (\f -> 
-                    all (\d -> not (d `isPrefixOf` deFileName f)) link_dirs
+                    all (\d -> not (d `isPrefixOf` deFileName f)) ignore_dirs
                 ) `liftM`
                 readDir datadir
 
@@ -145,7 +136,7 @@ main = do
         wikiConfig = config,
         recentChanges = rc,
         existingOutput = foundOutputs,
-        linkDirs = link_dirs
+        ignoredDirs = ignore_dirs
         }
 
   putStr "Find out there is to do.."

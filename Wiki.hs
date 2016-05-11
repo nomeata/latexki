@@ -202,7 +202,7 @@ genLiElem wi file = case lookupPage (PageName (B.unpack file)) (sitemap wi) of
 
 parseRC wi (RawLogEntry hash auth date paths raw_msg) = LogEntry hash auth date links msg (Just githublink)
   where msg = parseInline wi raw_msg
-        filtered_paths = filter (\f -> all (\d -> not (d `isPrefixOf` f)) (linkDirs wi)) paths
+        filtered_paths = filter (\f -> all (\d -> not (d `isPrefixOf` f)) (ignoredDirs wi)) paths
         links = flip map filtered_paths $ \path ->
             case lookupPage (PageName (dropExtensions path)) (sitemap wi) of
                         Just page -> mkPageLink wi page
