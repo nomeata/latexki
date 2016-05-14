@@ -242,7 +242,7 @@ backDir  page = backDir' (pagename page)
 
 editLink page  =  "https://github.com/nomeata/mitschriebwiki/edit/master/" ++ pageInputName page
 namedNewLink page  =  "https://github.com/nomeata/mitschriebwiki/edit/master/" ++ page
-newLink =  "cgi/edit"
+newLink =  "https://github.com/nomeata/mitschriebwiki/new/master"
 fileRelative :: PageInfo -> String
 fileRelative page = backDir page </> pageInput page
 

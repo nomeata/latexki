@@ -46,30 +46,6 @@ latexFile page title  body = return $ B.concat [
   B.concat (map render body),
   B.pack "\\end{document}"
   ]
- {-
-  tag "html" ((
-        tag "head" ( concat [
-                tagP "meta" [("http-equiv","Content-Type"),("content","text/html; charset=UTF-8")] "",
-                tag "title" ((mainTitle wi)++" - "++title++"</title>"),
-                tagP "link" [("rel","stylesheet"),("type","text/css"),("href",stylefile)] ""
-        ])
-  )++(
-        tag "body" ((
-                tagP "div" [("class","menu")] ( tag "ul" (
-                        concatMap li ([ ("Start page", "./") ] ++
-                                        addmenu                ++
-                                      [ ("Edit this", "./cgi/edit/"++basename),
-                                        ("Create new page","./cgi/edit" )])
-                ))
-        )++(
-                tagP "div" [("class","content")] body
-        ))
-  )))
-        where li (t,l) = tag "li" $ aHref l $ t
-              addmenuconf = fromMaybe "" . lookup "addmenu" . wikiConfig  $ wi
-              addmenu =  map (\f -> (f,"./"++f++".html") ) $ words addmenuconf
-              stylefile = backDir basename ++ "latexki-style.css"
--}
 
 file_escapes = [
                 ('\\',B.pack "\\textbackslash{}"),
