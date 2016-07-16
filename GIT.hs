@@ -23,6 +23,7 @@ parseLogEntry tz = do
     string "commit" >> many1 space
     hashR <- B.pack <$> many1 hexDigit
     endOfLine
+    optional $ string "Merge:" >> lineRest
     string "Author:" >> many1 space
     authorR <- B.pack <$> lineRest
     string "Date:" >> many1 space
