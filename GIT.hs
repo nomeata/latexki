@@ -46,7 +46,7 @@ runGitCommand args = readProcess "git" (["-C",datadir] ++ args) ""
 
 getGitRecentChanges :: IO [RawLogEntry]
 getGitRecentChanges = do
-   log <- runGitCommand ["log","-n","10","--name-only","--date=rfc2822"]
+   log <- runGitCommand ["log","-n","10","--format=medium", "--name-only","--date=rfc2822"]
    tz <- getCurrentTimeZone
    return $
     either (\e -> error (show e ++ "\n" ++ log)) id $
@@ -54,7 +54,7 @@ getGitRecentChanges = do
 
 getGitLastChange :: FilePath -> IO RawLogEntry
 getGitLastChange file = do
-   log <- runGitCommand ["log","-n","1","--name-only", "--date=rfc2822", "--", file]
+   log <- runGitCommand ["log","-n","1","--format=medium", "--name-only", "--date=rfc2822", "--", file]
    tz <- getCurrentTimeZone
    return $
     either (\e -> error (show e ++ "\n" ++ log)) id $
