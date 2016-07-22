@@ -15,9 +15,9 @@ import Data.List
 import WikiData
 import Common
 
-lineRest0 = many (noneOf "\n") <* newline
-lineRest = many1 (noneOf "\n") <* newline
-lineRestZ = manyTill anyChar (char '\0')
+lineRest0 = many (noneOf "\0\n") <* endOfLine
+lineRest  = many1 (noneOf "\0\n") <* endOfLine
+lineRestZ = many1 (noneOf "\0")   <* char '\0'
 
 parseLogEntry :: TimeZone -> Parser RawLogEntry
 parseLogEntry tz = do
@@ -40,7 +40,7 @@ readGitTime :: TimeZone -> String -> ZonedTime
 readGitTime tz = utcToZonedTime tz . parseTimeOrError True defaultTimeLocale rfc822DateFormat
 
 
-parseLogEntries tz = sepBy1 (parseLogEntry tz) (char '\0')
+parseLogEntries tz = parseLogEntry tz `sepBy1` char '\0'
 
 wholeFile p = p <* eof
 
@@ -56,7 +56,7 @@ getGitRecentChanges = do
    tz <- getCurrentTimeZone
    return $
     either (\e -> error (show e ++ "\n" ++ log)) id $
-    parse (wholeFile (parseLogEntries tz)) "git output" log
+    parse (wholeFile (parseLogEntries tz)) "git log" log
 
 getGitLastChange :: FilePath -> IO RawLogEntry
 getGitLastChange file = do
@@ -64,4 +64,4 @@ getGitLastChange file = do
    tz <- getCurrentTimeZone
    return $
     either (\e -> error (show e ++ "\n" ++ log)) id $
-    parse (wholeFile (parseLogEntry tz)) "git output" log
+    parse (wholeFile (parseLogEntry tz)) ("git log for " ++ file) log
